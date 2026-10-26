@@ -1,10 +1,6 @@
 # Säkerhetsklassning och nätverkszoner
  **Projekt:** Nätverksdesign i egna labbmiljöer  
-<<<<<<< HEAD
- **Datum:** 2026-10-26 
-=======
  **Datum:** 2026-10-126 
->>>>>>> c28c7af (Revise security zones and address space)
  **Version:** v.03  
  **Ansvarig:** Team-ankorna  
  **Adressutrymme:** `10.40.2.0/24` · Endast IPv4.
