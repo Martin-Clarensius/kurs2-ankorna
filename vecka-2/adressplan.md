@@ -1,4 +1,5 @@
 # Adressplan
+
 Adressutrymme: 10.40.2.0/24 (RFC 1918, endast IPv4), tilldelat teamet ur kursens block 10.40.0.0/16 (team Ankorna, T=2)
 (Hetzner): 10.40.2.0/24
 Gateway för hela nätet: 10.40.2.1 (reserverad av plattformen, får inte användas av servrar)
@@ -18,3 +19,11 @@ Antagande: Webb- och applikationszonerna (/27) rymmer upp till 23 servrar inklus
 | 172.20.1.0/24 | Labbnät (ej teamets, bara filtrering) | Jump 172.20.1.2, ctf 172.20.1.10, log 172.20.1.58 | – | Kursens drift |
 
 Regel: Ej allokerat utrymme får inte användas utan att planen uppdateras.
+
+## Tilldelade serveradresser
+
+| Adress | Server | Zon | Ansvarig |
+|---|---|---|---|
+| 10.40.2.98 | elev-29 (eth2) | Management / admin | Oliver |
+| 10.40.2.99 | elev-33 (eth2) | Management / admin | Per |
+| 10.40.2.100 | elev-34 (eth2) | Management / admin | Martin |
