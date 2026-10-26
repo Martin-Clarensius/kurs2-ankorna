@@ -1,6 +1,6 @@
 # Säkerhetsklassning och nätverkszoner
  **Projekt:** Nätverksdesign i egna labbmiljöer  
- **Datum:** 2026-10-126 
+ **Datum:** 2026-10-26 
  **Version:** v.03  
  **Ansvarig:** Team-ankorna  
  **Adressutrymme:** `10.40.2.0/24` · Endast IPv4.
