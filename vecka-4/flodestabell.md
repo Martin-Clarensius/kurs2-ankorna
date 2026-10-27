@@ -50,8 +50,3 @@
 - Dokumentera testresultat och status för varje regel.
 
 **Säkerhetsprincip:** All trafik som inte uttryckligen tillåts ska nekas (default deny).
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 506ee2e (Lägg till förslag på flödestabell för vecka 4)
