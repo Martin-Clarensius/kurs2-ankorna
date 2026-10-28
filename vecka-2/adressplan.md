@@ -26,4 +26,4 @@ Regel: Ej allokerat utrymme får inte användas utan att planen uppdateras.
 |---|---|---|---|
 | 10.40.2.98 | elev-29 (eth2) | Management / admin | Oliver |
 | 10.40.2.99 | elev-33 (eth2) | Management / admin | Per |
-| 10.40.2.100 | elev-34 (eth2) | Management / admin | Martin |
+| 10.40.2.82 | elev-34 (eth2) | Logg / övervakning | Martin |
