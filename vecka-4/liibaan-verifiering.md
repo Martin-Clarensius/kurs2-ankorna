@@ -92,3 +92,11 @@ Application-serverns IP-adress, tjänst och brandvägg
 behöver kontrolleras tillsammans med teamet.
 
 Status: Delvis verifierad – end-to-end-test återstår.
+
+## F7 och F8 – Status 2 november 2026
+
+F7 – Internet till Databas: Ej verifierad. Databasserverns faktiska IP och extern testväg behöver bekräftas av teamet.
+
+F8 – Internet till Management: Ej verifierad. Management-adresserna 10.40.2.98 (Oliver) och 10.40.2.99 (Per) finns i adressplanen, men blockering från Internet behöver verifieras av ansvariga.
+
+Båda testerna är dokumenterade som väntande i sparbarhet.md. Inga godkända testresultat har antagits utan mätbevis.
