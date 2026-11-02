@@ -1,0 +1,19 @@
+Testdatum: 2026-11-02
+Server: elev-03
+Källa: 10.40.2.3
+Testdestination: 10.40.2.65
+
+F9 - TCP 5432
+Förväntat: tyst
+Faktiskt: timeout, exit code 124
+Loggbevis: ZON-UT-DROP, DPT=5432
+Slutsats: Trafiken blockerades av nftables.
+
+F10 - TCP 8080
+Förväntat: tyst
+Faktiskt: timeout, exit code 124
+Loggbevis: ZON-UT-DROP, DPT=8080
+Slutsats: Trafiken blockerades av nftables.
+
+Observera: 10.40.2.65 är en testadress.
+Den riktiga serveradressen är inte bekräftad.
