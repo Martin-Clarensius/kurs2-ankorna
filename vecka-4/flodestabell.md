@@ -51,10 +51,7 @@
 
 **Säkerhetsprincip:** All trafik som inte uttryckligen tillåts ska nekas (default deny).
 <<<<<<< HEAD
-<<<<<<< HEAD
 
 
 =======
 >>>>>>> 506ee2e (Lägg till förslag på flödestabell för vecka 4)
-=======
->>>>>>> b262436 (Portar i trafiken flödestabellen)
