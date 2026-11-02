@@ -26,3 +26,24 @@ Brandväggsregeln F1 är konfigurerad och SSH-åtkomst
 fungerar efter aktivering. Fullständig trafikverifiering
 återstår. Testfallens förväntade resultat är inte
 uppmätta resultat.
+
+## Trafiktester – 2 november 2026
+
+### F9 – Webb/DMZ till databaszon
+- Källa: 10.40.2.3
+- Testdestination: 10.40.2.65
+- Port: TCP 5432
+- Resultat: timeout, exit code 124
+- Logg: ZON-UT-DROP, DPT=5432
+- Slutsats: nftables blockerade testtrafiken.
+
+### F10 – Otillåten trafik
+- Källa: 10.40.2.3
+- Testdestination: 10.40.2.65
+- Port: TCP 8080
+- Resultat: timeout, exit code 124
+- Logg: ZON-UT-DROP, DPT=8080
+- Slutsats: nftables blockerade testtrafiken.
+
+Observera: 10.40.2.65 är en testadress.
+Databasserverns faktiska IP har inte bekräftats.
