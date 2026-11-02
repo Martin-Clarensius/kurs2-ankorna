@@ -50,3 +50,5 @@
 - Dokumentera testresultat och status för varje regel.
 
 **Säkerhetsprincip:** All trafik som inte uttryckligen tillåts ska nekas (default deny).
+
+
