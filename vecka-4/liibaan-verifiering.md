@@ -5,98 +5,129 @@
 - Team: Ankorna
 - Zon: Webb/DMZ
 - Privat IP: 10.40.2.3
+- Subnät: 10.40.2.0/27
+- Publik IP: 2.28.98.141
 
 ## Genomfört
 - Kopplat servern till teamnätet.
 - Verifierat IP-adressen 10.40.2.3 på eth2.
-- Lagt till F1: inkommande TCP 443 i molnbrandväggen.
-- Lagt till TCP 443 i nftables input-kedja.
+- Konfigurerat F1: inkommande TCP 443 i molnbrandväggen och nftables.
 - Kontrollerat nftables-konfigurationens syntax.
-- Aktiverat reglerna och verifierat fortsatt SSH-åtkomst.
+- Verifierat fortsatt SSH-åtkomst.
+- Verifierat att brandväggsreglerna finns kvar efter omstart.
+- Verifierat HTTPS lokalt, via privat IP och från Internet.
+- Genomfört två separata F1-testkörningar.
 - Dokumenterat sex planerade testfall i testfall.csv.
+- Testat F2, F9 och F10 med dokumenterade resultat.
+- Verifierat D1, D3, D4 och D7.
+- Dokumenterat delvis verifierade tester för D5 och D6.
 
-## Återstår att verifiera
-- HTTPS-tjänst på port 443 (ingen lyssnande tjänst verifierad).
-- F2: Webb/DMZ till Application TCP 80 (Application-IP saknas).
-- F7–F10: faktiska trafiktester och mätresultat.
-- F3–F6: verifiering tillsammans med ansvariga teammedlemmar.
+## F1 – Internet till Webb/DMZ, TCP 443
+
+Status: Verifierad.
+
+Webbserver: Apache 2.4.62
+
+Kontroller:
+- TCP 443 lyssnar på servern.
+- Lokal HTTPS-kontroll gav HTTP/1.1 200 OK.
+- HTTPS via 10.40.2.3 gav HTTP/1.1 200 OK.
+- Extern HTTPS-kontroll från Mac till 2.28.98.141 gav HTTP/1.1 200 OK.
+
+Två separata testkörningar har dokumenterats:
+- f1-testkorning-1.txt
+- f1-testkorning-2.txt
+
+Dessa verifierar F1, men inte två fullständiga testkörningar av alla flöden.
+
+## F2 – Webb/DMZ till Application, TCP 80
+
+Status: Delvis verifierad.
+
+- Källa: 10.40.2.3
+- Testdestination: 10.40.2.34
+- F2-regeln är aktiv i nftables.
+- tcpdump visade utgående SYN-paket.
+- Inget SYN-ACK observerades.
+- Anslutningen gav timeout.
+
+Application-serverns faktiska IP och tjänst är inte bekräftade. Fullständig anslutning återstår att verifiera.
+
+## F7 – Internet till Databas
+
+Status: Ej verifierad.
+
+Databasserverns faktiska IP och en lämplig extern testväg behöver bekräftas med teamet.
+
+## F8 – Internet till Management
+
+Status: Ej verifierad.
+
+Management-adresser enligt adressplanen:
+- Oliver: 10.40.2.98
+- Per: 10.40.2.99
+
+Blockering från Internet behöver verifieras tillsammans med ansvariga.
+
+## F9 – Webb/DMZ till databaszon, TCP 5432
+
+Status: Lokalt blockeringstest genomfört.
+
+- Källa: 10.40.2.3
+- Testdestination: 10.40.2.65
+- Resultat: Timeout, exitkod 124.
+- Brandväggslogg: ZON-UT-DROP, DPT=5432.
+
+nftables loggade blockering av testtrafiken.
+
+10.40.2.65 är en testadress, inte en bekräftad databasserver.
+
+## F10 – Otillåten trafik, TCP 8080
+
+Status: Lokalt blockeringstest genomfört.
+
+- Källa: 10.40.2.3
+- Testdestination: 10.40.2.65
+- Resultat: Timeout, exitkod 124.
+- Brandväggslogg: ZON-UT-DROP, DPT=8080.
+
+nftables loggade blockering av testtrafiken.
+
+## Driftflöden D1–D7
+
+- D1: SSH från jump – verifierad.
+- D2: SSH från CTF – regel konfigurerad, test från rätt källa återstår.
+- D3: DNS TCP/UDP 53 – verifierad.
+- D4: NTP UDP 123 – verifierad.
+- D5: Logg TCP 514 – etablerad rsyslog-anslutning verifierad, mottagning återstår att bekräfta.
+- D6: DHCP – konfiguration och brandväggsregel verifierade, nytt DHCP-utbyte inte fångat.
+- D7: Utgående HTTPS TCP 443 – verifierad.
+
+## Teamets subnät och begränsningar – 2 november 2026
+
+Team Ankorna består av fyra personer.
+
+Enligt diskussion med Per behöver vi inte placera en server i varje subnät. Vi använder de servrar som finns och dokumenterar begränsningarna.
+
+Min server elev-03 använder 10.40.2.3 i Webb/DMZ, 10.40.2.0/27.
+
+Applikationsserver och databasserver har ännu inte bekräftats.
+
+Tester som inte kan genomföras dokumenteras som ej fullständigt verifierade, med en förklaring. Det innebär inte automatiskt att de är godkända.
+
+## Återstående arbete
+
+- F2: Fullständig anslutning till Application.
+- F3–F6: Verifiering tillsammans med teamet.
+- F7 och F8: Tester från rätt källa.
+- F9 och F10: Kompletterande verifiering vid behov.
+- Krav 8: Fullständig testkörning.
+- Krav 10: Två fullständiga testkörningar, med dokumenterade resultat och begränsningar.
 
 ## Slutsats
-Brandväggsregeln F1 är konfigurerad och SSH-åtkomst
-fungerar efter aktivering. Fullständig trafikverifiering
-återstår. Testfallens förväntade resultat är inte
-uppmätta resultat.
 
-## Trafiktester – 2 november 2026
+Webb/DMZ-servern är ansluten till teamnätet. HTTPS från Internet fungerar och brandväggsreglerna finns kvar efter omstart.
 
-### F9 – Webb/DMZ till databaszon
-- Källa: 10.40.2.3
-- Testdestination: 10.40.2.65
-- Port: TCP 5432
-- Resultat: timeout, exit code 124
-- Logg: ZON-UT-DROP, DPT=5432
-- Slutsats: nftables blockerade testtrafiken.
+Flera tillåtna och blockerade trafikflöden har testats och dokumenterats.
 
-### F10 – Otillåten trafik
-- Källa: 10.40.2.3
-- Testdestination: 10.40.2.65
-- Port: TCP 8080
-- Resultat: timeout, exit code 124
-- Logg: ZON-UT-DROP, DPT=8080
-- Slutsats: nftables blockerade testtrafiken.
-
-Observera: 10.40.2.65 är en testadress.
-Databasserverns faktiska IP har inte bekräftats.
-
-## F1 – HTTPS verifiering, 2 november 2026
-
-Server: elev-03
-Webbserver: Apache 2.4.62
-SSL: mod_ssl installerad och laddad
-
-Kontroller:
-- TCP 443: LISTEN
-- TCP 80: LISTEN
-- curl -kI https://127.0.0.1/
-  Resultat: HTTP/1.1 200 OK
-- curl -kI https://10.40.2.3/
-  Resultat: HTTP/1.1 200 OK
-
-Slutsats:
-Apache HTTPS-tjänsten fungerar lokalt på servern
-och via serverns privata IP-adress.
-
-Extern åtkomst genom molnbrandväggen
-är ännu inte separat verifierad.
-
-## F2 – Webb/DMZ till Application, 2 november 2026
-
-Källserver: elev-03 (10.40.2.3)
-Destination: 10.40.2.34
-Protokoll: TCP
-Port: 80
-Förväntat resultat: Öppen anslutning
-
-Kontroller:
-- F2-regel tillagd i /etc/nftables/u41.nft.
-- Syntaxkontroll med nft -c godkänd.
-- F2-regeln verifierad som aktiv i nftables.
-- tcpdump på eth2 visade två utgående SYN-paket.
-- Inget SYN-ACK observerades.
-- Anslutningstest gav exitkod 124 (timeout).
-
-Slutsats:
-Utgående SYN-trafik från Webb/DMZ har verifierats.
-Anslutningen till Application-servern fungerar ännu inte.
-Application-serverns IP-adress, tjänst och brandvägg
-behöver kontrolleras tillsammans med teamet.
-
-Status: Delvis verifierad – end-to-end-test återstår.
-
-## F7 och F8 – Status 2 november 2026
-
-F7 – Internet till Databas: Ej verifierad. Databasserverns faktiska IP och extern testväg behöver bekräftas av teamet.
-
-F8 – Internet till Management: Ej verifierad. Management-adresserna 10.40.2.98 (Oliver) och 10.40.2.99 (Per) finns i adressplanen, men blockering från Internet behöver verifieras av ansvariga.
-
-Båda testerna är dokumenterade som väntande i sparbarhet.md. Inga godkända testresultat har antagits utan mätbevis.
+Fullständig verifiering kräver fortsatt samarbete med teamet, framför allt för flöden där målservrar eller rätt testkällor saknas.
