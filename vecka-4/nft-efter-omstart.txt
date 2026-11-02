@@ -1,0 +1,28 @@
+table inet zon {
+	chain in {
+		type filter hook input priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		iifname "lo" accept
+		ip saddr 172.20.1.2 tcp dport 22 accept
+		tcp dport 443 accept
+		ip saddr 172.20.1.10 tcp dport 22 accept
+		iifname "eth1" ip saddr 172.20.1.203 tcp dport 48132 log prefix "ZON-IN-DROP: " level info
+		limit rate 10/minute burst 5 packets log prefix "ZON-IN-DROP: " level info
+	}
+
+	chain ut {
+		type filter hook output priority filter; policy drop;
+		ct state established,related accept
+		ct state invalid drop
+		oifname "lo" accept
+		ip saddr 10.40.2.3 ip daddr 10.40.2.34 tcp dport 80 accept
+		ip daddr { 185.12.64.1, 185.12.64.2 } udp dport 53 accept
+		ip daddr { 185.12.64.1, 185.12.64.2 } tcp dport 53 accept
+		udp dport 123 accept
+		ip daddr 172.20.1.58 tcp dport 514 accept
+		udp sport 68 udp dport 67 accept
+		tcp dport 443 accept
+		limit rate 10/minute burst 5 packets log prefix "ZON-UT-DROP: " level info
+	}
+}
