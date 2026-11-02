@@ -1,0 +1,29 @@
+D3 DNS UDP
+192.178.183.102
+192.178.183.100
+192.178.183.139
+192.178.183.113
+192.178.183.138
+192.178.183.101
+D3 DNS TCP
+142.251.14.139
+142.251.14.138
+142.251.14.101
+142.251.14.102
+142.251.14.113
+142.251.14.100
+D4 NTP
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^* ntp2.hetzner.de               2   7   377    61   -416us[ -487us] +/-   35ms
+D7 HTTPS
+HTTP/2 200 
