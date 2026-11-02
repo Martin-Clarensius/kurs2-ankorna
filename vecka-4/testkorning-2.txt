@@ -1,0 +1,7 @@
+ID,Destination,Port,Forvantat,Faktiskt,Status
+F1,10.40.2.3,443,oppen,ej_testad,FEL_TESTKALLA
+F2,Application-IP,80,oppen,ej_testad,SAKNAR_IP
+F7,Database-IP,5432,tyst,ej_testad,SAKNAR_IP
+F8,Management-IP,22,tyst,ej_testad,SAKNAR_IP
+F9,Database-IP,5432,tyst,ej_testad,SAKNAR_IP
+F10,Ej-godkand-IP,8080,tyst,ej_testad,SAKNAR_IP
