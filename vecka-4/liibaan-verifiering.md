@@ -68,3 +68,27 @@ och via serverns privata IP-adress.
 
 Extern åtkomst genom molnbrandväggen
 är ännu inte separat verifierad.
+
+## F2 – Webb/DMZ till Application, 2 november 2026
+
+Källserver: elev-03 (10.40.2.3)
+Destination: 10.40.2.34
+Protokoll: TCP
+Port: 80
+Förväntat resultat: Öppen anslutning
+
+Kontroller:
+- F2-regel tillagd i /etc/nftables/u41.nft.
+- Syntaxkontroll med nft -c godkänd.
+- F2-regeln verifierad som aktiv i nftables.
+- tcpdump på eth2 visade två utgående SYN-paket.
+- Inget SYN-ACK observerades.
+- Anslutningstest gav exitkod 124 (timeout).
+
+Slutsats:
+Utgående SYN-trafik från Webb/DMZ har verifierats.
+Anslutningen till Application-servern fungerar ännu inte.
+Application-serverns IP-adress, tjänst och brandvägg
+behöver kontrolleras tillsammans med teamet.
+
+Status: Delvis verifierad – end-to-end-test återstår.
