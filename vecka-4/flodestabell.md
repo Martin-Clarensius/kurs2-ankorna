@@ -19,6 +19,9 @@
 | ID | Källa | Mål | Protokoll | Port | Riktning | Beslut |
 |---|---|---|---|---|---|---|
 | F1 | Internet | Webb / DMZ | TCP | 443 | In | Tillåt |
+| F2 | Webb / DMZ | Applikation | TCP | 80 | Ut/In | Tillåt |
+| F3 | Applikation | Databas | TCP | 5432 | Ut/In | Tillåt |
+| F4 | Godkända servrar | Loggserver | TCP | 514| Ut/In | Tillåt |
 | F2 | Webb / DMZ | Applikation | TCP | Ej bestämd | Ut/In | Tillåt |
 | F3 | Applikation | Databas | TCP | Ej bestämd | Ut/In | Tillåt |
 | F4 | Godkända servrar | Loggserver | TCP | Ej bestämd | Ut/In | Tillåt |
@@ -50,3 +53,5 @@
 - Dokumentera testresultat och status för varje regel.
 
 **Säkerhetsprincip:** All trafik som inte uttryckligen tillåts ska nekas (default deny).
+
+
