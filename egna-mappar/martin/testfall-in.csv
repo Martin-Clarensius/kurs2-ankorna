@@ -1,0 +1,7 @@
+id,kalla,destination,port,protokoll,riktning,forvantat,faktiskt
+F6-till,10.40.2.98,10.40.2.82,22,tcp,in,oppen,
+F6-nek,10.40.2.98,10.40.2.82,8080,tcp,in,tyst,
+F4-in-till,WEBB-IP,10.40.2.82,514,tcp,in,oppen,
+F4-in-nek,10.40.2.98,10.40.2.82,514,tcp,in,tyst,
+D1-till,172.20.1.2,172.20.1.134,22,tcp,in,oppen,
+D1-nek,172.20.1.2,172.20.1.134,8080,tcp,in,tyst,
