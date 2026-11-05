@@ -22,6 +22,9 @@
 | F2 | Webb / DMZ | Applikation | TCP | 80 | Ut/In | Tillåt |
 | F3 | Applikation | Databas | TCP | 5432 | Ut/In | Tillåt |
 | F4 | Godkända servrar | Loggserver | TCP | 514| Ut/In | Tillåt |
+| F2 | Webb / DMZ | Applikation | TCP | Ej bestämd | Ut/In | Tillåt |
+| F3 | Applikation | Databas | TCP | Ej bestämd | Ut/In | Tillåt |
+| F4 | Godkända servrar | Loggserver | TCP | Ej bestämd | Ut/In | Tillåt |
 | F5 | Jump-server | Management | TCP | 22 | In | Tillåt |
 | F6 | Management | Godkända servrar | TCP | 22 | Ut/In | Tillåt |
 | F7 | Internet | Databas | Alla | Alla | In | Neka |
