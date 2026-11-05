@@ -1,0 +1,9 @@
+id,kalla,destination,port,protokoll,riktning,forvantat,faktiskt
+D5-till,elev-34,172.20.1.58,514,tcp,ut,oppen,oppen (9 ms)
+D5-nek,elev-34,172.20.1.58,8080,tcp,ut,tyst,tyst (3002 ms)
+F4-ut-till,elev-34,172.20.1.58,6514,tcp,ut,oppen,oppen (4 ms)
+D3-till,elev-34,185.12.64.1,53,tcp,ut,oppen,oppen (8 ms)
+D3-nek,elev-34,8.8.8.8,53,tcp,ut,tyst,tyst (3003 ms)
+D7-till,elev-34,1.1.1.1,443,tcp,ut,oppen,oppen (13 ms)
+D7-nek,elev-34,1.1.1.1,80,tcp,ut,tyst,tyst (3003 ms)
+F10-nek-ut,elev-34,10.40.2.34,22,tcp,ut,tyst,tyst (3002 ms)

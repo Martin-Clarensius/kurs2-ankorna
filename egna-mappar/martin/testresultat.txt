@@ -1,0 +1,15 @@
+id,forvantat,faktiskt
+D5-till,oppen,oppen (5 ms)
+D5-nek,tyst,tyst (3003 ms)
+F4-ut-till,oppen,oppen (4 ms)
+D3-till,oppen,oppen (7 ms)
+D3-nek,tyst,tyst (3002 ms)
+D7-till,oppen,oppen (10 ms)
+D7-nek,tyst,tyst (3002 ms)
+F10-nek-ut,tyst,tyst (3003 ms)
+
+Loggbelägg (journalctl -k -g ZON-UT, 2026-11-05 09:15 UTC):
+D5-nek      ZON-UT-DROP OUT=eth1 DST=172.20.1.58 DPT=8080
+D3-nek      ZON-UT-DROP OUT=eth0 DST=8.8.8.8 DPT=53
+D7-nek      ZON-UT-DROP OUT=eth0 DST=1.1.1.1 DPT=80
+F10-nek-ut  nekad (tyst, 3002 ms), ej loggad: limit rate burst 5 var slut
