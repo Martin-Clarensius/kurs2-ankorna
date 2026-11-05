@@ -1,0 +1,9 @@
+D5 - Loggserver TCP 514
+ESTAB 0      0       172.20.1.103:48458  172.20.1.58:514   users:(("rsyslogd",pid=991,fd=5))                                    
+D6 - DHCP
+GENERAL.DEVICE:                         eth0
+DHCP4.OPTION[3]:                        dhcp_server_identifier = 172.31.1.1
+GENERAL.DEVICE:                         lo
+GENERAL.DEVICE:                         eth1
+GENERAL.DEVICE:                         eth2
+		udp sport 68 udp dport 67 accept

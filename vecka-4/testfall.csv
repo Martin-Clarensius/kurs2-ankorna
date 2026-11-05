@@ -1,0 +1,7 @@
+id,kalla,dest,port,proto,riktn,forv
+F1,Internet,10.40.2.3,443,tcp,in,oppen
+F2,10.40.2.3,Application-IP,80,tcp,ut,oppen
+F7,Internet,Database-IP,5432,tcp,in,tyst
+F8,Internet,Management-IP,22,tcp,in,tyst
+F9,10.40.2.3,Database-IP,5432,tcp,ut,tyst
+F10,10.40.2.3,Ej-godkand-IP,8080,tcp,ut,tyst
