@@ -2,7 +2,7 @@
 
 Team: [team-ankorna] · Servrar: elev-34 (172.20.1.134), 10.40.2.82 [logg/övervakning] · Loggserver: log.sec.chas-lab.dev (172.20.1.58)
 
-## Loggkällekarta (workshop 1, del 1)
+## Loggkällekarta 
 
 | Källa | Var / hur den läses | Exempelrad (klistrad) | Vilken fråga den besvarar | Rotation | Hur långt bakåt | Tidsformat |
 |---|---|---|---|---|---|---|
@@ -15,7 +15,7 @@ Team: [team-ankorna] · Servrar: elev-34 (172.20.1.134), 10.40.2.82 [logg/överv
 
 Anmärkning: journalen och `/var/log/secure` innehåller samma händelser i två lagringar, inte två olika händelser.
 
-## Fem frågor och urval (workshop 1, del 2)
+## Fem frågor och urval 
 
 | Fråga (tidsspann, subjekt, vad som ska fastställas) | Källor som krävs | Går att besvara idag? |
 |---|---|---|
@@ -43,7 +43,7 @@ Alla servrar skickar system-, autentiserings- och brandväggsloggar till 172.20.
 | elev-34 | 2026-11-09 12:00:51 | rsyslog active (running), nftables enabled, regler 6514 och 123 kvar, ESTAB mot 172.20.1.58:6514 | EFTER-OMSTART, EFTER-OMSTART2, EFTER-OMSTART3 | Ja, kanal TLS (kom fram 12:03:07 respektive 12:04:00) |
 | [10.40.2.82 / servernamn] | [tid] | [fyll i] | [fyll i] | [fyll i] |
 
-## Verifieringsanteckning (workshop 2)
+## Verifieringsanteckning 
 
 Sökning gjord på jump med `loggsök <söksträng>`.
 
@@ -63,7 +63,7 @@ Utskrift från `loggsök` (bevis på hur vi letade):
 
 [klistra in utskrift, t.ex. `loggsök EFTER-OMSTART` och `loggsök "ZONE-UT" | grep TLS`]
 
-## Skyddsbeskrivning av loggkedjan (workshop 2, del 2)
+## Skyddsbeskrivning av loggkedjan 
 
 ### 1) Vem kan ändra eller radera loggen lokalt?
 Root. `secure` och `messages` har rättigheterna `-rw-------` (root:root), och katalogerna `audit/`, `httpd/` och `private/` är `drwx------` (root). Användaren `student` är med i gruppen `wheel` och har `(ALL) ALL` i sudo, och kan därför agera som root. Belägg: `ls -l /var/log`, `id`, `sudo -l`.
