@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Loggkällekarta (workshop 1, del 1)
+## 1. Loggkällekarta 
 
 | Källa | Var / hur den läses | Exempelrad (klistrad) | Vilken fråga den besvarar | Rotation | Hur långt bakåt | Tidsformat |
 |---|---|---|---|---|---|---|
@@ -22,7 +22,7 @@ Anmärkning: journalen och `/var/log/secure` innehåller samma händelser i två
 
 ---
 
-## 2. Fem frågor och urval (workshop 1, del 2)
+## 2. Fem frågor och urval 
 
 | Fråga (tidsspann, subjekt, vad som ska fastställas) | Källor som krävs | Går att besvara idag? |
 |---|---|---|
@@ -95,7 +95,7 @@ Observation: de två första händelserna väntade i kön tills anslutningen var
 
 ---
 
-## 5. Verifieringsanteckning (workshop 2)
+## 5. Verifieringsanteckning 
 
 Sökning görs på jump med `loggsök <söksträng>`.
 
@@ -125,7 +125,7 @@ mottaget 2026-11-09T12:04:00.986Z TLS | 2026-11-09T12:04:00.964501+00:00 172.20.
 
 ---
 
-## 6. Skyddsbeskrivning av loggkedjan (workshop 2, del 2)
+## 6. Skyddsbeskrivning av loggkedjan 
 
 ### 1) Vem kan ändra eller radera loggen lokalt?
 
