@@ -6,6 +6,7 @@ id_rsa*
 .env
 *.env
 secrets/
+.DS_Store
 
 # Trafikfangst och loggar (stora eller kansliga)
 *.pcap
