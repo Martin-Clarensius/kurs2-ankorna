@@ -9,15 +9,17 @@
 
 ## Status
 
-| Detektion | Larmar | Brus normaltrafik | Brus mitt fönster | Playbook |
-|---|---|---|---|---|
-| D1 SSH brute force | ✅ 2026-11-12 11:12 | ⟨n⟩ | ⟨n⟩ | ✅ |
-| D2 Zonöverträdelse (nftables) | ⟨✅ hh:mm⟩ | ⟨n⟩ | ⟨n⟩ | ✅ |
-| D3 Root-kommando (auditd) | ✅ 2026-11-16 09:28 (3 larm t.o.m. 09:36) | ⟨n⟩ | ⟨n⟩ | ✅ |
-| D4 Misslyckad sudo | ❌ Larmade inte på testet 2026-11-16 09:18 – felsöks | ⟨n⟩ | ⟨n⟩ | ✅ |
+Normaltrafik: 2026-11-11 08:06–08:37 (0,52 h). Mitt fönster: 2026-11-15 18:00 – 2026-11-16 08:00 (14 h).
+
+| Detektion | Monitor | Larmar | Brus normaltrafik | Brus mitt fönster | Falsklarmrisk | Playbook |
+|---|---|---|---|---|---|---|
+| D1 SSH brute force | `elev-33` | ✅ 2026-11-12 11:12 | 39 (≈ 75/h) | 0 (0/h) | Medel | ✅ |
+| D3 Root-kommando (auditd) | `elev-33-root-kommando` | ✅ 2026-11-16 09:28 | 0 | 0 | Låg | ✅ |
+| D4 Misslyckad sudo | `Misslyckad-sudo-elev-33` | ✅ 2026-11-16 ⟨hh:mm⟩ (efter rättning) | 0 | 0 | Låg | ✅ |
+| D5 Beaconing (VG, U6.5) | `elev-33-C2-becon-(T1071.001)` | ✅ 2026-11-12 14:29 | 0 | 0 | Låg–medel | ✅ |
+| D2 Zonöverträdelse (tillval) | ej byggd | – | – | – | – | ✅ |
 
 ![Alerts by triggers 2026-11-16 09:44](skärmdumpar/alerts-oversikt.png)
-| D5 Beaconing (VG, U6.5) | ✅ 2026-11-12 14:29 | ⟨n⟩ | ⟨n⟩ | ✅ |
 
 ---
 
@@ -32,8 +34,8 @@
 | Hur loggarna når loggservern | rsyslog → TLS tcp 6514 till `log.sec.chas-lab.dev` (`90-tls-forward.conf`, regeln för 6514 laddad i nftables), kärnloggen även tcp 514 till 172.20.1.58 (`60-brandvagg.conf`) |
 | Monitorer | Alla byggda i Wazuh (Alerting → Monitors). ⟨Skärmdumpar återstår.⟩ |
 | Tidszon | elev-33 går på ⟨UTC, kontrollera med `timedatectl`⟩. Dashboarden visar svensk tid (CET = UTC+1). Alla larmtider nedan är svensk tid om inte UTC anges. |
-| Normaltrafikperiod (utbildarens, enligt `kontrollera U6.3`) | ⟨2026-11-11 08:06–08:37 svensk tid = 31 min ≈ 0,52 h – bekräfta⟩ |
-| Mitt mätfönster | ⟨start – slut = x h⟩ |
+| Normaltrafikperiod (utbildarens, enligt `kontrollera U6.3`) | 2026-11-11 08:06–08:37 svensk tid = 31 min ≈ 0,52 h |
+| Mitt mätfönster | 2026-11-15 18:00 – 2026-11-16 08:00 svensk tid = 14 h (inga egna tester) |
 | Kända legitima källor | jump-servern 172.20.1.2 (egna inloggningar, flöde D1), ctf-servern 172.20.1.10 (CTF-kontroller, loggar in som root med nyckel, flöde D2) |
 
 **Faser i playbookarna (NIST SP 800-61):**
@@ -73,10 +75,11 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 | Trigger | `Susp SSH`: IS ABOVE 4 (minst 5 försök inom fönstret), severity 1 |
 | Körintervall | 1 minut |
 | Varför 5710 | Regel 5710 ("Attempt to login using a non-existent user") ger en post per försök. Teamets erfarenhet (Martin) är att 5712 inte gick vid U6.2. |
-| Brus i normaltrafik, utan location-filter | ⟨n träffar på 0,52 h ≈ n/h⟩ |
-| Brus i normaltrafik, med monitorns filter | ⟨n⟩ |
-| Brus i mitt mätfönster | ⟨n träffar på x h = n/h⟩ |
-| Falsklarmrisk | ⟨Låg/medel/hög + motivering⟩. Kända källor som ger larm: CTF-kontrollen U6.2 (172.20.1.10). |
+| U6.3: regel 5760 (sshd: authentication failed) i normaltrafiken | Utan filter: **603 träffar på 0,52 h ≈ 1 167 per timme** (svar till `kontrollera U6.3 603` ⟨godkänt?⟩). Med `location: *elev-33*`: **3 träffar på 0,52 h ≈ 6 per timme**. Location-filtret tar alltså bort 600 av 603 träffar (99,5 %). En monitor på 5760 utan filter hade larmat i stort sett varje minut. De 3 träffarna på elev-33 kommer från `data.srcip: 172.20.1.2` (jump-servern) mot kontot `data.dstuser: student`, alltså egna inloggningsförsök via jump och inte angrepp. Det är exakt gränsfallet "enstaka felskrivning vid egen inloggning", och det ligger under tröskeln (IS ABOVE 4). ⟨Källa (`data.srcip`) och konto (`data.srcuser`) för de 3⟩. Regel 5760 gäller misslyckad inloggning mot konton som *finns*, och min D1-monitor (5710) fångar den inte – se Känd lucka. |
+| Brus i normaltrafik, regel 5710 utan location-filter | **307 träffar på 0,52 h ≈ 590 per timme** |
+| Brus i normaltrafik, regel 5710 med `location: *elev-33*` | **39 träffar på 0,52 h ≈ 75 per timme.** Med tröskeln > 4 på 5 min hade monitorn sannolikt larmat under perioden (monitorn skapades först 2026-11-11 11:17, så det finns inga larm då). Av de 39 kommer 9 från `data.srcip: 10.40.1.126` (okänd adress i teamnätet, inte jump eller ctf). ⟨Övriga 30: källor och `location`-värden⟩ |
+| Brus i mitt mätfönster | **0 träffar på 14 h = 0 per timme** |
+| Falsklarmrisk | **Medel.** Ingenting i mitt eget fönster, men 39 träffar på elev-33 i normaltrafiken (≈ 75/h), varav 9 från 10.40.1.126. Kommer sådan trafik igen larmar monitorn. Det är riktiga misslyckade inloggningar mot konton som inte finns, så larmet är inte fel i sak, men i normaltrafiken räknas de som förväntade. Kända källor som ger larm: CTF-kontrollen U6.2 (172.20.1.10), som körs mot hela teamet samtidigt. Egna felskrivningar från jump (3 st regel 5760 i normaltrafiken) ligger under tröskeln och ger inget larm. |
 | Känd lucka (falskt negativt) | Monitorn tittar bara på 5710, alltså användare som *inte finns*. Gissning mot konton som finns ger 5716/5720 och fångas inte. Långsam gissning under tröskeln fångas inte heller. ⟨Beslut: lägg till 5716/5720 eller dokumentera luckan⟩ |
 
 ### Verifiering
@@ -206,14 +209,14 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 | Del | Innehåll |
 |---|---|
 | Monitornamn | `elev-33-root-kommando` (byggd, se [`monitorer-oversikt.png`](skärmdumpar/monitorer-oversikt.png)) |
+| Brus i normaltrafik (2026-11-11 08:06–08:37) | **0 träffar på 0,52 h** |
 | Typ | Per query monitor, Extraction Query |
 | Index | `wazuh-archives-*` |
 | Fråga | Senaste 5 min, `match_phrase` på `full_log`, alla måste träffa: `elev-33 audisp-syslog`, `type=SYSCALL`, `root_cmd`, `auid=1000` |
 | Trigger | `root-kommando`: `ctx.results[0].hits.total.value > 0`, severity 1 |
 | Körintervall | 1 minut |
-| Brus i normaltrafik | ⟨n⟩ |
-| Brus i mitt mätfönster | ⟨n på x h⟩ |
-| Falsklarmrisk | Låg utanför arbetstid. Teamets eget arbete med sudo dagtid ger larm. |
+| Brus i mitt mätfönster | **0 träffar på 14 h = 0 per timme** |
+| Falsklarmrisk | **Låg.** 0 träffar i båda fönstren. Larmet kommer bara när en inloggad användare kör något som root, vilket utanför arbetstid är ovanligt. Teamets eget arbete med sudo dagtid ger larm (t.ex. 5 larm 2026-11-16 11:03–11:16 under testerna). |
 
 ### Verifiering
 
@@ -272,14 +275,14 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 | Del | Innehåll |
 |---|---|
 | Monitornamn | `Misslyckad-sudo-elev-33` (byggd, se [`monitorer-oversikt.png`](skärmdumpar/monitorer-oversikt.png)) |
+| Brus i normaltrafik (2026-11-11 08:06–08:37) | **0 träffar på 0,52 h** |
 | Typ | Per query monitor, Extraction Query |
 | Index | `wazuh-archives-*` |
 | Fråga | Senaste 5 min, `full_log` innehåller `pam_unix(sudo:auth): authentication failure` och `elev-33` |
 | Trigger | `misslyckad-sudo`: `ctx.results[0].hits.total.value > 0` |
 | Körintervall | 1 minut |
-| Brus i normaltrafik | ⟨n⟩ |
-| Brus i mitt mätfönster | ⟨n på x h⟩ |
-| Falsklarmrisk | Låg. Ett larm betyder normalt att någon skrivit fel lösenord till sudo. Om felskrivningar ger för många larm: höj tröskeln (t.ex. > 2 på 5 min). |
+| Brus i mitt mätfönster | **0 träffar på 14 h = 0 per timme** |
+| Falsklarmrisk | **Låg.** 0 träffar i båda fönstren. Ett larm betyder att någon har skrivit fel lösenord till sudo på elev-33. Frasen `pam_unix(sudo:auth)` finns inte i lyckade sudo-kommandon, så sökningar i loggen (`sudo grep ...`) ger inte längre falsklarm. En enstaka felskrivning ger larm; blir det för många kan tröskeln höjas (t.ex. > 2 på 5 min). |
 
 ### Verifiering
 
@@ -287,13 +290,20 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 |---|---|
 | Hur händelsen framkallades | `echo fel \| sudo -S -k true` i ssh lab, två gånger |
 | Tid (lokal logg, UTC) | 2026-11-16 08:17:58 (`sudo[114409]`) och 08:18:04 (`sudo[114415]`) = 09:17:58 och 09:18:04 svensk tid. Båda med `authentication failure` och `1 incorrect password attempt`. |
-| Larm | **Inget larm** från `Misslyckad-sudo-elev-33` för testet 09:18 ([`alerts-oversikt.png`](skärmdumpar/alerts-oversikt.png)). Trolig orsak: posterna i `wazuh-archives-*` innehåller `conversation failed` och `auth could not identify password`, inte `authentication failure` som står i `/var/log/secure`. ⟨Jämför monitorns fråga med posterna, rätta och testa igen.⟩ |
+| Larm | **Inget larm** från `Misslyckad-sudo-elev-33` för testet 09:18 ([`alerts-oversikt.png`](skärmdumpar/alerts-oversikt.png)). Min första gissning var att frasen `authentication failure` inte når Wazuh, men den höll inte: posten 11:11:07.081 (regel 5503) innehåller `pam_unix(sudo:auth): authentication failure` från elev-33. |
+| Orsak (fastställd) | Monitorn sökte inte i något index. **Run** i monitorn gav `"_shards": { "total": 0 }` och `hits.total.value: 0`, trots att samma fråga gav 20 träffar i Discover. Indexet `wazuh-archives-*` hade skrivits in men inte valts (Enter trycktes inte), så det sparades aldrig. Monitor, fråga och trigger såg rätt ut i övrigt. |
+| Åtgärd | Indexet valdes om som `wazuh-archives-*` i samma monitor (`Misslyckad-sudo-elev-33`). Kontroll: **Run** ger `_shards.total` > 0. |
+| Lärdom | En monitor som ser rätt ut kan ändå söka i ingenting. Kontrollera alltid `_shards.total` i svaret från **Run**, och verifiera varje detektion med ett framkallat larm – inte bara med en sökning i Discover. |
+| Larm efter rättningen | `⟨monitornamn⟩`: ⟨hh:mm⟩ svensk tid, efter `echo fel \| sudo -S -k true` kl. ⟨hh:mm:ss⟩ UTC ⟨skärmdump⟩ |
 | Poster i Discover | 09:18:07.208–09:18:07.217 svensk tid, alla `location: /var/log/remote/elev-33/syslog.log`: `sudo: pam_unix(sudo:auth): conversation failed`, `sudo: pam_unix(sudo:auth): auth could not identify password for [student]`, auditd `type=USER_AUTH ... op=PAM:authentication ... exe="/usr/bin/sudo" ... res=failed AUID="student"` och `type=USER_CMD ... cmd="true" exe="/usr/bin/sudo" ... res=failed`. Sökningen `full_log: "incorrect password" or full_log: "authentication failure"` 09:15–09:35 gav 10 träffar. |
 | Fynd 1: frasen träffar lyckade kommandon | Två av träffarna (09:29:15 och 09:32:31) är **lyckade** `sudo grep -iE 'incorrect password\|authentication failure' /var/log/secure` (regel 5402 "Successful sudo to ROOT executed"). Frasen finns i själva kommandoraden. En monitor som bara söker på frasen ger alltså falsklarm när någon söker i loggen. Frågan bör kräva `pam_unix(sudo:auth)` eller utesluta `COMMAND=`. |
 | Fynd 2: andra servrar | Träffarna 09:30:01 och 09:30:10 kommer från **elev-29** (regel 5503 "PAM: User login failed" och 5404 "Three failed attempts to run sudo"). Utan filter på `elev-33` hade monitorn larmat på en annan elevs test. |
 | Bevis | [`d4-discover.png`](skärmdumpar/d4-discover.png), [`d4-poster-0918.png`](skärmdumpar/d4-poster-0918.png) |
 | Larm | ⟨hh:mm svensk tid⟩ |
-| Gränsfall | Lyckad sudo 08:29:15 UTC (09:29:15 svensk tid) ⟨gav inget D4-larm – bekräfta⟩ |
+| Ändring av monitorn | Fraserna `sudo` + `authentication failure` byttes mot `pam_unix(sudo:auth)`. Ett misslyckat försök ger tre poster med den frasen (`authentication failure`, `conversation failed`, `auth could not identify password`), medan lyckade sudo loggas som `sudo: student : TTY=... COMMAND=...` utan den. Ändringen tar bort falsklarmet från `sudo grep 'authentication failure'` (fynd 1). |
+| Poster efter ändringen | Discover `full_log: "pam_unix(sudo:auth)" and full_log: "elev-33"`, i dag: 20 träffar, bl.a. 11:10:47–11:11:07 från testerna ([`d4-discover-efter-rattning.png`](skärmdumpar/d4-discover-efter-rattning.png)) |
+| Nytt test efter rättningen | `echo fel \| sudo -S -k true; date` två gånger: 2026-11-16 10:10:48 och 10:11:06 UTC (11:10:48 och 11:11:06 svensk tid). Utdata båda gångerna: `Sorry, try again.` … `sudo: 1 incorrect password attempt`. |
+| Gränsfall | Lyckad `sudo id; date` 2026-11-16 10:14:01 UTC (11:14:01 svensk tid), utdata `uid=0(root)`. ⟨Gav inget nytt D4-larm – bekräfta⟩ |
 | Bevis | Se raden Bevis ovan. ⟨`d4-monitor-larm.png`: monitorns larmhistorik⟩ |
 
 ![D4: 10 träffar 09:15–09:35, bland annat elev-29 och lyckade sudo grep](skärmdumpar/d4-discover.png)
@@ -353,7 +363,9 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 | Filter | `predecoder.program_name is syncagent` och `location contains elev-33` |
 | Trigger | `Becon c2`: COUNT IS ABOVE 4 (minst 5 anrop inom fönstret), severity 1 |
 | Körintervall | 1 minut |
-| Brus | ⟨normaltrafik n, mitt fönster n⟩ |
+| Brus i normaltrafik (2026-11-11 08:06–08:37) | **0 träffar på 0,52 h** |
+| Brus i mitt fönster | **0 träffar på 14 h = 0 per timme** |
+| Falsklarmrisk | **Låg–medel.** 0 träffar i båda fönstren. Men regeln bygger på frekvens, inte på om målet är skadligt: en riktig backup- eller synktjänst som heter `syncagent` och laddar upp ofta skulle också larma. |
 | Känd lucka | Bunden till programnamnet; ett omdöpt program eller glesare anrop fångas inte. |
 
 ### Verifiering
