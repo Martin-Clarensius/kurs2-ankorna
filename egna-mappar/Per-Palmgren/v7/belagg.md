@@ -78,6 +78,17 @@ permitrootlogin without-password
 passwordauthentication yes
 ```
 
+## B12 – verifieringsskriptet
+
+```
+[student@elev-33 bin]$ sudo ./verifiera-hardning
+GÄLLER: SELinux är i tvingande läge
+GÄLLER: Modulen zonvakt är laddad i policyn
+GÄLLER: Domänen zonvakt_t är inte permissiv
+GÄLLER: /srv/zonwebb har bestående regel och kontexten httpd_sys_content_t
+GÄLLER: nftables släpper in 172.20.1.10
+```
+
 ## B10 – historik, brandvägg, loggning och SELinux
 
 ```

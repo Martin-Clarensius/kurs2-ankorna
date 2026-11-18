@@ -2,13 +2,13 @@
 
 **Server:** elev-33 (10.40.2.99), management-zonen, team Ankorna
 **Granskad:** 2026-11-18
-**Underlag:** utdata från servern i [belagg.md](belagg.md) (B1–B11), regelfilen [zon.nft](../brandvägg/cfg/zon.nft) och tidigare dokumentation i [loggning.md](../loggning.md) och [v6](../v6/detektioner-och-playbooks.md). Hur AI användes beskrivs i [metodbilaga.md](metodbilaga.md). Arbetslistan med alla radnummer ur historiken finns i [hardningslista.md](hardningslista.md).
+**Underlag:** utdata från servern i [belagg.md](belagg.md) (B1–B12), regelfilen [zon.nft](../brandvägg/cfg/zon.nft) och tidigare dokumentation i [loggning.md](../loggning.md) och [v6](../v6/detektioner-och-playbooks.md). Hur AI användes beskrivs i [metodbilaga.md](metodbilaga.md). Arbetslistan med alla radnummer ur historiken finns i [hardningslista.md](hardningslista.md).
 
 ## Domar
 
 | Dom | Betydelse |
 |---|---|
-| **Stämmer** | Bekräftat med utdata från servern idag (B1–B9) |
+| **Stämmer** | Bekräftat med utdata från servern idag (B1–B9, B12) |
 | **Stämmer (historik)** | Kommandot finns i historiken (B10–B11), men utdatan är inte med i rapporten |
 | **Stämmer (v5)** | Bekräftat med utdata från servern vecka 5, dokumenterad i [loggning.md](../loggning.md). Inte kontrollerat igen idag |
 | **Delvis** | Åtgärden finns, men den är svagare än påståendet |
@@ -17,7 +17,7 @@
 
 ## Sammanfattning
 
-Av 33 påståenden stämmer 18 enligt utdata från servern idag, 7 enligt historiken och 2 enligt utdata från vecka 5. 3 stämmer delvis, 1 stämmer inte och 2 är inte verifierade. Den största bristen är att SSH tillåter lösenordsinloggning (P29). Fem fel är rättade, se [Rättelselogg](#rättelselogg).
+Av 33 påståenden stämmer 21 enligt utdata från servern idag, 4 enligt historiken och 2 enligt utdata från vecka 5. 3 stämmer delvis, 1 stämmer inte och 2 är inte verifierade. Den största bristen är att SSH tillåter lösenordsinloggning (P29). Fem fel är rättade, se [Rättelselogg](#rättelselogg).
 
 ## 1. Brandvägg (nftables)
 
@@ -60,9 +60,9 @@ Av 33 påståenden stämmer 18 enligt utdata från servern idag, 7 enligt histor
 
 | # | Påstående | Dom | Belägg |
 |---|---|---|---|
-| P28a | SELinux är i läge Enforcing, även efter omstart | Stämmer (historik) | B10: `getenforce` rad 677, 751, 963 (efter omstart) och 1060. Skriptet kontrollerar `Enforcing` (rad 894) |
-| P28b | zonvakt kör i en egen tvingande domän `zonvakt_t`, inte permissive | Stämmer (historik) | B11: `semodule -i zonvakt.pp` rad 844, 871, 950. `semodule -l \| grep zonvakt` 845. `ps -eZ \| grep zonvakt` 965 (efter omstart) och 1062. B10: kontrollen mot permissive rad 900. Utdata sparad i `~/ai-mapp/Verifierad/` (rad 1002–1014), inte i repot |
-| P28c | `/srv/zonwebb` är märkt `httpd_sys_content_t` med en bestående regel | Stämmer (historik) | B10: `semanage fcontext -a` rad 765, `restorecon` 766, 769 och 791. Skriptet kontrollerar regeln (rad 903) |
+| P28a | SELinux är i läge Enforcing, även efter omstart | Stämmer | B12: `GÄLLER: SELinux är i tvingande läge`. B10: `getenforce` rad 677, 751, 963 (efter omstart) och 1060. Skriptet kontrollerar `Enforcing` (rad 894) |
+| P28b | zonvakt kör i en egen tvingande domän `zonvakt_t`, inte permissive | Stämmer | B12: `GÄLLER: Modulen zonvakt är laddad i policyn`, `GÄLLER: Domänen zonvakt_t är inte permissiv`. B11: `semodule -i zonvakt.pp` rad 844, 871, 950. `semodule -l \| grep zonvakt` 845. `ps -eZ \| grep zonvakt` 965 (efter omstart) och 1062. B10: kontrollen mot permissive rad 900. Utdata sparad i `~/ai-mapp/Verifierad/` (rad 1002–1014), inte i repot |
+| P28c | `/srv/zonwebb` är märkt `httpd_sys_content_t` med en bestående regel | Stämmer | B12: `GÄLLER: /srv/zonwebb har bestående regel och kontexten httpd_sys_content_t`. B10: `semanage fcontext -a` rad 765, `restorecon` 766, 769 och 791. Skriptet kontrollerar regeln (rad 903) |
 
 ## 4. SSH
 
@@ -74,7 +74,7 @@ Av 33 påståenden stämmer 18 enligt utdata från servern idag, 7 enligt histor
 
 | # | Påstående | Dom | Belägg |
 |---|---|---|---|
-| P30 | `/usr/local/bin/verifiera-hardning` kontrollerar Enforcing, permissive, filkontext och brandväggsregeln för zonvakt | Delvis | B10: kontrollerna rad 894–908. Kontroll 5 (`grep -q '172.20.1.10'`) lyckas också på D2-regeln (SSH från ctf, B1), så den upptäcker inte om regeln för 7533 saknas. Se K2 |
+| P30 | `/usr/local/bin/verifiera-hardning` kontrollerar Enforcing, permissive, filkontext och brandväggsregeln för zonvakt | Delvis | B12: alla fem kontroller ger `GÄLLER`. B10: kontrollerna rad 894–908. Kontroll 5 (`grep -q '172.20.1.10'`) lyckas också på D2-regeln (SSH från ctf, B1), så den upptäcker inte om regeln för 7533 saknas. Se K2 |
 | P31 | Molnbrandväggen `itsx26-elev-33` stämmer med nftables | Ej verifierad | Regler saknas i [v6](../v6/detektioner-och-playbooks.md#regelverket-på-elev-33-båda-lagren). Kontrolleras med `moln status` i ssh jump |
 
 ## Rättelselogg
