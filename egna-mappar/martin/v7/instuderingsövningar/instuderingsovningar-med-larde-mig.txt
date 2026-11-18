@@ -1,0 +1,108 @@
+Ö1. DAC eller MAC? 
+En webbserver kör som användaren apache. En angripare tar över
+processen. Vad bestämmer vilka filer angriparen kommer åt i DAC, och vad bestämmer det i
+MAC? Varför skyddar MAC även när processen kör som root?
+
+Svar: I DAC bestämmer filens ägare och rättigheterna (rwx), så angriparen kommer åt allt som användaren apache kommer åt. Kör processen som root kommer angriparen åt i princip allt. I MAC bestämmer systemets policy utifrån processens domän och filens typ. Det gäller oavsett ägare och även för root, så en övertagen httpd_t kan bara nå det som policyn tillåter webbservern.
+Självrättning: ✓ 
+Jag lärde mig att DAC bygger på ägare och rättigheter, medan MAC bygger på policyn och gäller även för root. MAC begränsar skadan när en process redan har tagits över.
+
+Ö2. Lägena. 
+Vad händer med en överträdelse i läget, enforcing, permissive respektive disabled? Varför är disabled sämre än permissive även vid felsökning?
+
+Svar: 
+Enforcing: överträdelsen stoppas och loggas (permissive=0).
+Permissive: överträdelsen tillåts men loggas (permissive=1).
+Disabled: ingenting händer och ingenting loggas. (ingen rad alls)
+Disabled är sämre än permissive för att ingenting stoppas och ingenting loggas. I permissive så loggas vad som händer.
+Självrättning: ✓ 
+Jag lärde mig att permissive loggar överträdelser utan att stoppa dem, medan disabled varken stoppar eller loggar. Därför är permissive bättre för felsökning.
+
+Ö3. Nu och efter omstart. 
+getenforce svarar Permissive men /etc/selinux/config säger SELINUX=enforcing. Vilket läge gäller efter nästa omstart? Hur kan det ha blivit så här?
+
+Svar: Efter omstart gäller enforcing, eftersom /etc/selinux/config läses vid start. Att det står Permissive just nu beror troligen på att någon har kört setenforce 0, som bara gäller fram till nästa omstart. Med sestatus ser du båda lägena: “Current mode” och “Mode from config file”.
+Självrättning: ✓ 
+Jag lärde mig att setenforce bara gäller tills nästa omstart och att /etc/selinux/config avgör läget efter omstart. Man ska kontrollera båda, till exempel med sestatus.
+
+Ö4. Kontexten. 
+Förklara de fyra fälten i system_u:object_r:httpd_sys_content_t:s0. Vilket fält
+avgör nästan alltid om åtkomst tillåts?
+
+Svar: 
+system_u: SELinux-användaren
+object_r: rollen
+httpd_sys_content_t: typen
+s0: nivån
+
+Självrättning: ✓ 
+Jag lärde mig vad de fyra fälten i en kontext betyder. Det är typen som nästan alltid avgör om åtkomst tillåts.
+
+Ö5. Läs en AVC.
+type=AVC msg=audit(1794500123.456:2881): avc: denied { name_bind } for pid=4711 comm="httpd" src=8088 scontext=system_u:system_r:httpd_t:s0 tcontext=system_u:object_r:unreserved_port_t:s0 tclass=tcp_socket permissive=0
+Vilken process, vilken resurs och vilken operation nekades? Stoppades den eller loggades den bara? Vilken åtgärd är rätt?
+
+Svar: 
+Process: httpd, i domänen httpd_t
+Resurs: TCP-port 8088, märkt unreserved_port_t
+Operation: name_bind, alltså att binda till porten och lyssna på den
+Stoppades: ja, permissive=0
+Självrättning: ✓ 
+Jag lärde mig att läsa en AVC: process (comm), domän (scontext), resurs (tcontext), operation och om den stoppades (permissive=0). Rätt åtgärd här är att märka porten med semanage port, inte att stänga av SELinux.
+
+Ö6. Välj rätt åtgärd. 
+För varje fall: fcontext, boolean, portmärkning eller egen policymodul?
+1. httpd ska servera filer från /srv/intranat och ger 403.
+2. httpd ska vara proxy mot en applikationsserver på ett annat nät och får Permission
+denied vid anslutning.
+3. sshd ska lyssna på port 2222.
+4. En egen tjänst kör som unconfined_service_t.
+
+Svar: 
+fcontect
+boolean 
+portmärkning 
+egen policymodul 
+
+Självrättning: ✓ 
+Jag lärde mig att välja verktyg efter problemet: fcontext för filtyp, boolean för färdiga av/på-knappar, portmärkning för en ny port och egen policymodul för en tjänst utan egen domän.
+
+Ö7. chcon eller semanage fcontext? 
+Du rättar en katalog med chcon -t httpd_sys_content_t
+och allt fungerar. Veckan efter slutar det fungera. Vad hände, och hur borde du gjort?
+
+Svar: chcon ändrar bara kontexten på filerna, men sparar ingen regel. När någon körde restorecon eller systemet gjorde en relabel sattes katalogen tillbaka till sin gamla typ, så det slutade fungera. Jag borde ha använt semanage fcontext -a -t httpd_sys_content_t 'KATALOG(/.*)?' följt av restorecon -Rv KATALOG, så att regeln sparas och ändringen består.
+
+Självrättning: ✓ 
+Jag lärde mig att chcon inte är bestående, men att semanage fcontext tillsammans med restorecon är det. Regeln måste sparas i policyn för att överleva en relabel.
+
+Ö8. Permissiv domän eller permissivt system? 
+Vad är skillnaden mellan setenforce 0 och raden permissive zonvakt_t; i en policymodul? Varför är den ena acceptabel under arbetet och den andra inte?
+
+Svar: setenforce 0 gör hela systemet permissivt, så inget stoppas längre för någon tjänst. permissive zonvakt_t; gör bara en domän permissiv, medan resten av systemet fortsätter i enforcing. Det senare går bra under felsökning, men raden ska bort när tjänsten är klar. setenforce 0 är aldrig en lösning.
+
+Självrättning: ? 
+Jag lärde mig att en permissiv domän är ett felsökningsläge för en tjänst, men att raden ska bort innan tjänsten räknas som skyddad. setenforce 0 är aldrig en lösning.
+
+Ö9. Granska audit2allow. 
+audit2allow -R föreslår för zonvakt bland annat corecmd_exec_bin,
+corecmd_mmap_bin_files, auth_read_passwd_file, corenet_tcp_bind_generic_port och
+files_manage_etc_files. Vilka rader behöver tjänsten, vilken ska absolut inte in, vilken är för
+bred – och vilken behövs inte alls?
+
+Svar: 
+Behövs: corecmd_mmap_bin_files, eftersom Python måste få köras, och auth_read_passwd_file, eftersom Python slår upp användarnamn.
+Behövs inte: corecmd_exec_bin, eftersom mmap_bin_files redan täcker det. Raden är dessutom bredare.
+För bred: corenet_tcp_bind_generic_port, som tillåter vilken oreserverad port som helst.
+Ska absolut inte in: files_manage_etc_files, eftersom det är just skrivandet i /etc som ska stoppas.
+Självrättning: ? 
+Jag lärde mig att audit2allow tillåter allt som nekades, även sådant som aldrig ska tillåtas. Därför måste jag granska varje rad och fråga om tjänsten verkligen behöver den.
+
+Ö10. Verifiering eller konfiguration? 
+Ett "verifieringsskript" innehåller raden setenforce 1 &&
+echo "SELinux: GÄLLER". Vad är problemet? Skriv om raden så att den verifierar.
+
+Svar: Raden utför åtgärden (setenforce 1) och skriver sedan alltid GÄLLER, så den verifierar ingenting. Den kontrollerar inte heller läget efter omstart. En verifierande rad läser av med getenforce och /etc/selinux/config och ändrar inget.
+
+Självrättning: ?
+Jag lärde mig att ett verifieringsskript ska läsa av tillståndet och inte utföra åtgärder. Det ska kontrollera både läget nu och efter omstart, och kunna säga GÄLLER INTE.
