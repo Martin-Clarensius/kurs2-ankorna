@@ -64,6 +64,29 @@ Utkast skrivet av Claude (AI) utifrån dagens chatt.
 - **Prompt (16:44):** Jag bad AI skriva en förklaring av mina regler i min egen mapp.
 - **AI:ns svar:** AI skrev `egna-mappar/martin/regelforklaring.md`. Det jag själv ska motivera eller bekräfta står som `⟨…⟩`.
 
+### 2026-11-18 (onsdag)
+
+Utkast skrivet av Claude (AI) utifrån dagens chatt.
+
+#### 1. Workshop 2 – härdningsrapporten
+Jag gjorde momentet själv, utan parkamrat (prompt ⟨tid⟩). AI hjälpte mig att välja vilka kommandon som behövdes för inmatningspaketet. Jag körde dem själv i ssh lab och klistrade in utdatan. AI skrev ett utkast med 20 påståenden (P1–P20), och jag dömde varje påstående mot min egen server. 17 av 20 stämde. De övriga rättade jag efter mina egna utdata:
+- **P13:** AI skrev att policyn var snävare än den är. `sudo sesearch -A -s zonvakt_t -t bin_t -c file` visade `allow zonvakt_t bin_t:file { execute map };`.
+- **P15:** Påståendet att tjänsten inte startar på en annan port var ogrundat som det stod. `systemctl is-active` visade `active`, men `ausearch` visade att `name_bind` på port 7600 nekades.
+- **P10:** PID 2411 var inaktuellt och rättades till 2998.
+
+Prompten och råsvaret ligger oredigerade i metodbilagan. Orsakerna i utelämningslistan är AI:ns förslag. ⟨Jag bekräftar eller ändrar dem.⟩
+
+#### 2. Rapport och metodbilaga i repot
+AI skrev `hardningsrapport.md` och `metodbilaga.md` i `egna-mappar/martin/v7` på min dator, med dom och belägg för varje påstående. VS Code visade först en äldre version, eftersom AI:ns första skrivning gav gammal text. AI skrev om filerna och kontrollerade att det fanns 20 domar och inga platshållare, lösenord eller nycklar. Jag läste igenom filerna, sparade dem i min gren (daterad 12:13), pushade och öppnade en Pull Request. Per godkände den 13:52.
+
+#### 3. U7.5 och U7.6 – skript och policy
+AI gav mig ett skript med fem kontroller som bara läser av tillståndet, och ändringarna i `zonvakt.te` för en egen porttyp (prompt ⟨tid⟩). Jag skapade skriptet själv i ssh lab (filens tidsstämpel är 09:14), gjorde det körbart, körde det och startade om servern. `sudo verifiera-hardning` gav `command not found`, så jag körde `sudo /usr/local/bin/verifiera-hardning`. Efter U7.6 visade jag att bind på port 7600 nekas.
+
+Klockan 14:05 bad jag AI lägga in skriptet och policyfilerna i repot. AI bad mig köra `cat` på `zonvakt.te` och `zonvakt.fc`, och lade in filerna oförändrade efter att jag klistrat in utdatan (14:06). AI har bara syntaxkontrollerat skriptet (`bash -n`), inte kört det.
+
+#### 4. Konflikt vid push
+Klockan 14:31 fick jag konflikter när jag pushade. AI såg att git hade börjat lägga om cirka 35 gamla sparningar. Min gren innehöll redan `main`, så det fanns ingen riktig konflikt. AI avbröt ombaseringen. Avbrottet misslyckades först delvis och lämnade en låsfil, som togs bort efter att jag godkänt borttagning av filer i mappen. AI kunde inte pusha själv (HTTP 403 från proxyn), så jag pushade själv i terminalen med `git push origin martin-clarensius` (14:35).
+
 ---
 
 ## Reflektion
