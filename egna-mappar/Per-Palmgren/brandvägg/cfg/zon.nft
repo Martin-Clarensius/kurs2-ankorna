@@ -1,42 +1,66 @@
 #!/usr/sbin/nft -f
 flush ruleset
 
+# ---------- Zondefinitioner ----------
+define GW                = 10.40.2.1
+define JUMP              = 172.20.1.2
+define CTF               = 172.20.1.10
+define LoggServ_IP       = 172.20.1.58
+define MIN_IP            = 10.40.2.99
 
-# ---------- Zondefinitioner (byt namn när zontabellen är klar) ----------
-define GW      = 10.40.2.1
-define JUMP    = 172.20.1.2
-define MIN_IP  = 10.40.2.99
-
-define WebServ   = 10.40.2.0/27
-define AppServ   = 10.40.2.32/27
-define DataServ   = 10.40.2.64/28
-define LoggServ   = 10.40.2.80/28
-define AdminServ   = 10.40.2.96/28   
-
+define WebServ           = 10.40.2.0/27
+define AppServ           = 10.40.2.32/27
+define DataServ          = 10.40.2.64/28
+define LoggServ          = 10.40.2.80/28
+define AdminServ         = 10.40.2.96/28
 
 table inet zon {
-  chain in {
+
+    chain in {
         type filter hook input priority 0; policy drop;
 
         ct state established,related accept
         ct state invalid drop
         iif "lo" accept
-        # Driftsregler för SSH och kontroll från CTF
-        ip saddr 172.20.1.2 tcp dport 22 accept comment"D1 SSH fran jump"
-        ip saddr 172.20.1.10 tcp dport 22 accept comment"D2 kontroll från ctf"
-        ip saddr 2.28.43.156 ntp dport 123 udp accept comment "D4 NTP"
-        # Rader ur flödestabellen, en regel per rad. att fylla på med fler regler när flödestabellen är klar
-        limit rate 10/minute log prefix "ZON-IN-DROP" level info
-        }
-  chain ut {
+
+        # F2: Provisoriskt flödesregel för httpd
+        ip saddr $CTF tcp dport 7533 accept comment "zonvakt"
+        ip saddr $CTF tcp dport 80 accept comment "F2 Httpd"
+
+        # D1/D2: SSH från jump/CTF till management
+        ip saddr $JUMP tcp dport 22 accept comment "D1 SSH från jump"
+        ip saddr $CTF  tcp dport 22 accept comment "D2 Kontroll från ctf"
+
+        # D6: DHCP-svar från servrar
+        iifname { "eth0", "eth1", "eth2" } udp sport 67 udp dport 68 accept comment "D6 DHCP-svar"
+
+        limit rate 10/minute log prefix "ZON-IN-DROP " level info
+    }
+
+    chain ut {
         type filter hook output priority 0; policy drop;
+
         ct state established,related accept
         oif "lo" accept
-        ip daddr {185.12.64.1,185.12.64.2} meta l4proto {tcp,udp} th dport 53 accept comment "D3 DNS"
-        ip daddr 172.20.1.58 tcp dport 514 accept comment "D5 logg till log"
-        udp sport 68 udp dport 67 accept comment "D6 DHCP-förnyelse"
-        # Fler rader för utgående riktning fyllas på när flödestabellen är klar
-        limit rate 10/minute log prefix "ZONE-UT-DROP" level info
-        }
 
+        # F6: Management -> godkända servrar, TCP 22
+        ip daddr { $WebServ, $AppServ, $DataServ, $LoggServ } tcp dport 22 accept comment "F6 SSH till godkända servrar"
+
+        # D3: DNS
+        ip daddr { 185.12.64.1, 185.12.64.2 } meta l4proto { tcp, udp } th dport 53 accept comment "D3 DNS"
+
+        # D4: NTP
+        oifname "eth0" udp dport 123 accept comment "D4 NTP chrony"
+
+        # D6: DHCP-klient, broadcast och unicast
+        oifname { "eth0", "eth1", "eth2" } udp sport 68 udp dport 67 accept comment "D6 DHCP-klient"
+
+        # D7: HTTPS för paketuppdateringar
+        oifname "eth0" tcp dport 443 accept comment "D7 paketuppdateringar dnf"
+
+        # D5: loggning över TLS
+        ip daddr $LoggServ_IP tcp dport 6514 accept comment "D5 Logg till loggserver TLS"
+
+        limit rate 10/minute log prefix "ZON-UT-DROP " level info
+    }
 }
