@@ -31,7 +31,7 @@ Normaltrafik: 2026-11-11 08:06–08:37 (0,52 h). Mitt fönster: 2026-11-15 18:00
 | Index för alla händelser | `wazuh-archives-*` (även poster som ingen standardregel larmar på) |
 | Hur min server känns igen | `location` innehåller `elev-33`. Alla poster har `agent.name: log` eftersom loggservern läser in dem, så `agent.name` går inte att filtrera på. |
 | Filter i monitorer | `location contains elev-33`. **Inte** `location is *elev-33*`: `is` kräver exakt match och stjärnorna tolkas bokstavligt (teamets lärdom från Martins D1). |
-| Hur loggarna når loggservern | rsyslog → TLS tcp 6514 till `log.sec.chas-lab.dev` (`90-tls-forward.conf`, regeln för 6514 laddad i nftables), kärnloggen även tcp 514 till 172.20.1.58 (`60-brandvagg.conf`) |
+| Hur loggarna når loggservern | rsyslog → TLS tcp 6514 till `log.sec.chas-lab.dev` (`90-tls-forward.conf`, regeln för 6514 laddad i nftables). Även kärnloggen går den vägen. *Rättat 2026-11-18:* här stod tidigare att kärnloggen också gick okrypterat på tcp 514 med `60-brandvagg.conf`. Den filen är borttagen från servern och brandväggen saknar regel för 514, se [härdningsrapporten R2](../v7/hardningsrapport.md#rättelselogg). |
 | Monitorer | Alla byggda i Wazuh (Alerting → Monitors). ⟨Skärmdumpar återstår.⟩ |
 | Tidszon | elev-33 går på ⟨UTC, kontrollera med `timedatectl`⟩. Dashboarden visar svensk tid (CET = UTC+1). Alla larmtider nedan är svensk tid om inte UTC anges. |
 | Normaltrafikperiod (utbildarens, enligt `kontrollera U6.3`) | 2026-11-11 08:06–08:37 svensk tid = 31 min ≈ 0,52 h |
@@ -135,9 +135,9 @@ Observationer och slutsatser hålls i olika fält i [triageloggen](triagelogg.md
 | Del | Innehåll |
 |---|---|
 | Händelse | Trafik som flödestabellen inte tillåter och som nftables därför stoppar och loggar |
-| Loggkälla | Kärnloggen från nftables, tabell `inet zon`. Kedja `ut` (hook output, policy drop) loggar med prefix `ZON-UT-DROP `; kedja `in` (hook input, policy drop) med `ZON-IN-DROP `. Båda `limit rate 10/minute burst 5 packets ... level info`. Skickas via rsyslog (`kern.*` till 172.20.1.58:514 och allt via TLS 6514). |
+| Loggkälla | Kärnloggen från nftables, tabell `inet zon`. Kedja `ut` (hook output, policy drop) loggar med prefix `ZON-UT-DROP `; kedja `in` (hook input, policy drop) med `ZON-IN-DROP `. Båda `limit rate 10/minute burst 5 packets ... level info`. Skickas via rsyslog över TLS 6514 (`*.*` i `90-tls-forward.conf`). |
 | Fält | `full_log` (prefix samt `SRC=`, `DST=`, `PROTO=`, `DPT=`), `location`, `timestamp` |
-| Faktiska värden | ⟨kontrollera prefixet med `sudo nft list ruleset` i ssh lab – i `zon.nft` står `ZONE-UT-DROP` utan mellanslag, i `nft-backup.nft` `ZON-UT-DROP ` med⟩; testflöde ⟨`DST=1.1.1.1`, `DPT=8080`⟩ |
+| Faktiska värden | prefix `ZON-UT-DROP ` med mellanslag (kontrollerat med `sudo nft list ruleset` 2026-11-18, [belägg B1](../v7/nft-ruleset-elev-33.nft)); testflöde ⟨`DST=1.1.1.1`, `DPT=8080`⟩ |
 | Gränsfall som inte ska träffa | Tillåtna flöden D1–D7 enligt flödestabellen (t.ex. dnf på tcp 443 ut, D7) |
 
 ### Detektion
