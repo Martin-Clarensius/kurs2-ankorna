@@ -1,0 +1,696 @@
+Du är en assistent som hjälper en IT-säkerhetsstudent. Nedan finns ett
+inmatningspaket från en härdad Linux-labbserver med SELinux. Känsliga
+värden är maskerade med platshållare som LÖSENORD-BORTTAGET och
+ADRESS-BORTTAGEN; behandla dem som okända och gissa inte värdena.
+
+Skriv ett UTKAST till en härdningsrapport på svenska med rubrikerna:
+1. Sammanfattning
+2. Utgångsläge (SELinux-status och läge)
+3. Genomförda härdningsåtgärder (utifrån härdningslistan)
+4. Verifiering (vad utdata från sestatus, semodule -l, ps -eZ och
+   verifieringsskriptet visar)
+5. Avvikelser och kvarstående risker
+6. Rekommendationer
+
+Numrera varje påstående (P1, P2, P3 ...). Hänvisa till vilket utdrag
+varje påstående bygger på. Om underlaget inte räcker för en slutsats,
+skriv det i stället för att gissa.
+
+--- INMATNINGSPAKET ---
+===== brandvaggstest.txt =====
+==================================================
+ Brandvaggstest - elev-29 - Wed Nov 18 12:27:21 PM UTC 2026
+==================================================
+
+A. Konfiguration pa plats
+  [PASS] nftables-tabellen 'zon' laddad
+  [PASS] nftables enabled (overlever omstart)
+  [PASS] svarstrafik tillaten i ut (established,related)
+  [PASS] DHCP finns i ut-kedjan
+  [PASS] ip_forward=0 (ingen bro mellan nat)
+
+B. Utgaende som SKA slappas
+  [PASS] DNS mot tillaten resolver fungerar
+  [PASS] HTTPS (443) ut fungerar
+
+C. Utgaende som SKA stoppas (malet lyssnar, sa block = bevis)
+  [PASS] SSH (22) ut blockerat (korrekt)
+  [PASS] DNS mot frammande resolver blockerad (korrekt)
+
+==================================================
+ RESULTAT: 9 PASS, 0 FAIL
+ Protokoll sparat i: /home/student/testprotokoll-20261118-122721.txt
+==================================================
+
+===== hardningslista.md =====
+# Härdningslista – labbserver Elev 29
+
+## Hur listan ska läsas
+
+| Spalt | Betyder |
+|---|---|
+| **Åtgärd** | Vad som gjorts på servern |
+| **Enkelt förklarat** | Vad det betyder och varför det gör servern säkrare |
+| **Bevis** | Var åtgärden syns: radnummer i kommandohistoriken (`history`) eller namnet på ett test |
+
+**Om siffrorna i Bevis:** kommandot `history` numrerar allt som skrivits i terminalen. Rad 722 är alltså det 722:a kommandot. Siffrorna visar var i historiken åtgärden finns, så att den går att kontrollera i efterhand. Kör `history | grep '^ *722 '` för att se ett enskilt kommando.
+
+---
+
+## 1. Brandvägg (nftables)
+
+| # | Åtgärd | Enkelt förklarat | Bevis |
+|---|---|---|---|
+| 1 | nftables används som paketfilter | Brandväggen är grinden som bestämmer vilken nätverkstrafik som får komma in och ut. firewalld har kontrollerats så att två brandväggar inte krockar. | 153, 325, 364, 725, 793 |
+| 2 | Reglerna ligger i tabellen `inet zon` med kedjorna `in` och `ut` | Alla regler är samlade på ett ställe: en lista för trafik in och en för trafik ut. De sparas i `/etc/sysconfig/nftables.conf`. | 375–469, 798 |
+| 3 | nftables startar automatiskt | Brandväggen slås på av sig själv när servern startar, så att den aldrig står oskyddad efter en omstart. Testat med en riktig omstart. | 289, 470, 799, 932 |
+| 4 | Utgående trafik är begränsad | Servern får bara prata ut på det den behöver: svar på egen trafik, DHCP, DNS mot godkänd server och HTTPS. SSH ut och DNS mot främmande servrar stoppas. | Brandväggstest (9 PASS) |
+| 5 | Port 7529 (zonvakt) öppen bara för en adress | Bara en utvald dator (ADRESS-BORTTAGEN) får ansluta till zonvakt. Alla andra stoppas. | 795–798 |
+| 6 | Port 6514 ut tillåten till loggservern | Servern får skicka sina loggar krypterat till den centrala loggservern. | 537, 596–606 |
+| 7 | Säkerhetsnät vid regeländringar | Innan nya regler laddas sparas en kopia, och en timer återställer automatiskt efter 2 minuter. Om en regel låser ute admin rättar det sig självt. | 280–284, 466–468 |
+| 8 | Reglerna kontrolleras innan de laddas | `nft -c` provläser reglerna och hittar skrivfel utan att aktivera något. | 274–315, 711 |
+
+## 2. Loggning
+
+| # | Åtgärd | Enkelt förklarat | Bevis |
+|---|---|---|---|
+| 9 | Loggar skickas krypterat till en central loggserver | Händelser sparas även på en annan server. En inkräktare kan inte sudda ut sina spår genom att bara radera loggarna lokalt. Kopplingen är krypterad (TLS) och kontrolleras med en egen CA (`labb-ca.pem`). | 635, 669, 686 |
+| 10 | Brandväggen loggar stoppad trafik | När brandväggen säger nej skrivs det upp, så att det syns om någon försöker ta sig in. | 305–308 |
+| 11 | auditd är igång | auditd är serverns "övervakningskamera": den skriver upp säkerhetshändelser, till exempel när SELinux nekar något. | 609, 621 |
+
+## 3. SELinux
+
+| # | Åtgärd | Enkelt förklarat | Bevis |
+|---|---|---|---|
+| 12 | Webbmappen `/srv/zonwebb` har rätt etikett | SELinux sätter en etikett på varje fil. Webbservern får bara läsa filer märkta `httpd_sys_content_t`, så mappen märktes rätt med `semanage fcontext` och `restorecon`. | 722–723 |
+| 13 | Egen SELinux-policy för zonvakt | zonvakt har fått en egen regelbok (`zonvakt.pp`) som säger exakt vad tjänsten får göra, och inget mer. Programfilen och loggmappen fick rätt etiketter. | 754–756, 785 |
+| 14 | zonvakt körs inte i permissive | Permissive betyder att SELinux bara skriver upp överträdelser utan att stoppa dem. Det är kontrollerat att zonvakt verkligen stoppas om den bryter mot reglerna. | 771 |
+| 15 | Dolda nekanden visades tillfälligt vid felsökning | Vissa nekanden loggas normalt inte (dontaudit). De slogs på tillfälligt för att hitta fel (`semodule -DB`) och stängdes av igen efteråt (`semodule -B`). | 779–782 |
+| 16 | zonvakt startar automatiskt | Tjänsten slås på av sig själv vid omstart. | 741 |
+
+## 4. Verifiering
+
+| # | Åtgärd | Enkelt förklarat | Bevis |
+|---|---|---|---|
+| 17 | Verifieringsskript `verifiera-hardning` | Ett eget skript som kontrollerar härdningen och svarar GÄLLER eller GÄLLER INTE för varje punkt. | 871 |
+| 18 | Brandväggstest `brandvagg-test.sh` | Testar att rätt trafik släpps igenom och fel trafik stoppas. Svarar PASS eller FAIL. | 506 |
+| 19 | Omstartstest | Servern startades om för att visa att allt fortfarande fungerar efteråt. | 932 |
+
+---
+
+## Att kontrollera innan inlämning
+
+| Kontroll | Varför | Status |
+|---|---|---|
+| SSH in begränsad till två adresser (261–262) | Regeln låg i den gamla tabellen `ip filter`. Finns den kvar i `inet zon`? Kör `sudo nft list chain inet zon in`. | ☐ |
+| Drop + logg av ADRESS-BORTTAGEN med prefix `U4.2-DROP` (322–323) | Samma fråga: finns regeln kvar? | ☐ |
+
+===== ps-eZ.txt =====
+LABEL                               PID TTY          TIME CMD
+system_u:system_r:init_t:s0           1 ?        00:00:08 systemd
+system_u:system_r:kernel_t:s0         2 ?        00:00:00 kthreadd
+system_u:system_r:kernel_t:s0         3 ?        00:00:00 pool_workqueue_
+system_u:system_r:kernel_t:s0         4 ?        00:00:00 kworker/R-rcu_gp
+system_u:system_r:kernel_t:s0         5 ?        00:00:00 kworker/R-sync_wq
+system_u:system_r:kernel_t:s0         6 ?        00:00:00 kworker/R-slub_flushwq
+system_u:system_r:kernel_t:s0         7 ?        00:00:00 kworker/R-netns
+system_u:system_r:kernel_t:s0         9 ?        00:00:00 kworker/0:0H-kblockd
+system_u:system_r:kernel_t:s0        11 ?        00:00:00 kworker/R-mm_percpu_wq
+system_u:system_r:kernel_t:s0        12 ?        00:00:03 kworker/u8:1-flush-8:0
+system_u:system_r:kernel_t:s0        13 ?        00:00:00 rcu_tasks_kthre
+system_u:system_r:kernel_t:s0        14 ?        00:00:00 rcu_tasks_rude_
+system_u:system_r:kernel_t:s0        15 ?        00:00:00 rcu_tasks_trace
+system_u:system_r:kernel_t:s0        16 ?        00:00:00 ksoftirqd/0
+system_u:system_r:kernel_t:s0        17 ?        00:00:35 pr/ttyS0
+system_u:system_r:kernel_t:s0        18 ?        00:00:00 rcu_preempt
+system_u:system_r:kernel_t:s0        19 ?        00:00:00 rcu_exp_par_gp_
+system_u:system_r:kernel_t:s0        20 ?        00:00:00 rcu_exp_gp_kthr
+system_u:system_r:kernel_t:s0        21 ?        00:00:00 migration/0
+system_u:system_r:kernel_t:s0        22 ?        00:00:00 idle_inject/0
+system_u:system_r:kernel_t:s0        24 ?        00:00:00 cpuhp/0
+system_u:system_r:kernel_t:s0        25 ?        00:00:00 cpuhp/1
+system_u:system_r:kernel_t:s0        26 ?        00:00:00 idle_inject/1
+system_u:system_r:kernel_t:s0        27 ?        00:00:00 migration/1
+system_u:system_r:kernel_t:s0        28 ?        00:00:00 ksoftirqd/1
+system_u:system_r:kernel_t:s0        30 ?        00:00:00 kworker/1:0H-events_highpri
+system_u:system_r:kernel_t:s0        32 ?        00:00:00 kdevtmpfs
+system_u:system_r:kernel_t:s0        33 ?        00:00:00 kworker/R-inet_frag_wq
+system_u:system_r:kernel_t:s0        34 ?        00:00:00 kauditd
+system_u:system_r:kernel_t:s0        35 ?        00:00:00 khungtaskd
+system_u:system_r:kernel_t:s0        36 ?        00:00:00 oom_reaper
+system_u:system_r:kernel_t:s0        38 ?        00:00:00 kworker/R-writeback
+system_u:system_r:kernel_t:s0        39 ?        00:00:01 kcompactd0
+system_u:system_r:kernel_t:s0        40 ?        00:00:00 ksmd
+system_u:system_r:kernel_t:s0        41 ?        00:00:00 khugepaged
+system_u:system_r:kernel_t:s0        42 ?        00:00:00 kworker/R-cryptd
+system_u:system_r:kernel_t:s0        43 ?        00:00:00 kworker/R-kblockd
+system_u:system_r:kernel_t:s0        44 ?        00:00:00 kworker/R-kintegrityd
+system_u:system_r:kernel_t:s0        45 ?        00:00:00 irq/9-acpi
+system_u:system_r:kernel_t:s0        47 ?        00:00:00 kworker/R-tpm_dev_wq
+system_u:system_r:kernel_t:s0        48 ?        00:00:00 kworker/R-md
+system_u:system_r:kernel_t:s0        49 ?        00:00:00 kworker/R-md_bitmap
+system_u:system_r:kernel_t:s0        50 ?        00:00:00 kworker/R-edac-poller
+system_u:system_r:kernel_t:s0        51 ?        00:00:00 watchdogd
+system_u:system_r:kernel_t:s0        53 ?        00:00:00 kswapd0
+system_u:system_r:kernel_t:s0        55 ?        00:00:02 kworker/u8:3-events_unbound
+system_u:system_r:kernel_t:s0        70 ?        00:00:00 kworker/R-kthrotld
+system_u:system_r:kernel_t:s0        74 ?        00:00:00 irq/24-aerdrv
+system_u:system_r:kernel_t:s0        75 ?        00:00:00 irq/25-aerdrv
+system_u:system_r:kernel_t:s0        76 ?        00:00:00 irq/26-aerdrv
+system_u:system_r:kernel_t:s0        77 ?        00:00:00 irq/27-aerdrv
+system_u:system_r:kernel_t:s0        78 ?        00:00:00 irq/28-aerdrv
+system_u:system_r:kernel_t:s0        79 ?        00:00:00 irq/29-aerdrv
+system_u:system_r:kernel_t:s0        80 ?        00:00:00 irq/30-aerdrv
+system_u:system_r:kernel_t:s0        81 ?        00:00:00 irq/31-aerdrv
+system_u:system_r:kernel_t:s0        82 ?        00:00:00 irq/32-aerdrv
+system_u:system_r:kernel_t:s0        83 ?        00:00:00 kworker/R-acpi_thermal_pm
+system_u:system_r:kernel_t:s0        84 ?        00:00:00 hwrng
+system_u:system_r:kernel_t:s0        85 ?        00:00:00 kworker/R-kmpath_rdacd
+system_u:system_r:kernel_t:s0        86 ?        00:00:00 kworker/R-kaluad
+system_u:system_r:kernel_t:s0        88 ?        00:00:00 kworker/R-mld
+system_u:system_r:kernel_t:s0        89 ?        00:00:00 kworker/R-ipv6_addrconf
+system_u:system_r:kernel_t:s0        94 ?        00:00:00 kworker/R-kstrp
+system_u:system_r:kernel_t:s0        99 ?        00:00:00 kworker/u9:0
+system_u:system_r:kernel_t:s0       355 ?        00:00:00 kworker/1:1H-kblockd
+system_u:system_r:kernel_t:s0       382 ?        00:00:00 scsi_eh_0
+system_u:system_r:kernel_t:s0       384 ?        00:00:00 kworker/R-scsi_tmf_0
+system_u:system_r:kernel_t:s0       397 ?        00:00:00 kworker/R-ata_sff
+system_u:system_r:kernel_t:s0       399 ?        00:00:00 scsi_eh_1
+system_u:system_r:kernel_t:s0       400 ?        00:00:00 kworker/R-scsi_tmf_1
+system_u:system_r:kernel_t:s0       401 ?        00:00:00 scsi_eh_2
+system_u:system_r:kernel_t:s0       402 ?        00:00:00 kworker/R-scsi_tmf_2
+system_u:system_r:kernel_t:s0       403 ?        00:00:00 scsi_eh_3
+system_u:system_r:kernel_t:s0       404 ?        00:00:00 kworker/R-scsi_tmf_3
+system_u:system_r:kernel_t:s0       405 ?        00:00:00 scsi_eh_4
+system_u:system_r:kernel_t:s0       406 ?        00:00:00 kworker/R-scsi_tmf_4
+system_u:system_r:kernel_t:s0       407 ?        00:00:00 scsi_eh_5
+system_u:system_r:kernel_t:s0       408 ?        00:00:00 kworker/R-scsi_tmf_5
+system_u:system_r:kernel_t:s0       409 ?        00:00:00 scsi_eh_6
+system_u:system_r:kernel_t:s0       410 ?        00:00:00 kworker/R-scsi_tmf_6
+system_u:system_r:kernel_t:s0       418 ?        00:00:00 kworker/0:2H-kblockd
+system_u:system_r:kernel_t:s0       434 ?        00:00:00 jbd2/sda1-8
+system_u:system_r:kernel_t:s0       435 ?        00:00:00 kworker/R-ext4-rsv-conversion
+system_u:system_r:syslogd_t:s0      525 ?        00:00:02 systemd-journal
+system_u:system_r:udev_t:s0-s0:c0.c1023 540 ?    00:00:00 systemd-udevd
+system_u:system_r:auditd_t:s0       599 ?        00:00:00 auditd
+system_u:system_r:auditd_t:s0       601 ?        00:00:00 audisp-syslog
+system_u:system_r:auditd_t:s0       602 ?        00:00:00 sedispatch
+system_u:system_r:kernel_t:s0       622 ?        00:00:00 kworker/R-nfit
+system_u:system_r:system_dbusd_t:s0-s0:c0.c1023 637 ? 00:00:00 dbus-broker-lau
+system_u:system_r:system_dbusd_t:s0-s0:c0.c1023 645 ? 00:00:02 dbus-broker
+system_u:system_r:irqbalance_t:s0   651 ?        00:00:06 irqbalance
+system_u:system_r:virt_qemu_ga_t:s0 653 ?        00:01:13 qemu-ga
+system_u:system_r:systemd_logind_t:s0 655 ?      00:00:01 systemd-logind
+system_u:system_r:chronyd_t:s0      661 ?        00:00:00 chronyd
+system_u:system_r:NetworkManager_t:s0 696 ?      00:00:02 NetworkManager
+system_u:system_r:httpd_t:s0        708 ?        00:00:06 httpd
+system_u:system_r:httpd_t:s0        748 ?        00:00:00 httpd
+system_u:system_r:httpd_t:s0        749 ?        00:00:31 httpd
+system_u:system_r:httpd_t:s0        750 ?        00:00:29 httpd
+system_u:system_r:httpd_t:s0        751 ?        00:00:29 httpd
+system_u:system_r:dhcpc_t:s0        966 ?        00:00:00 dhclient
+system_u:system_r:dhcpc_t:s0        967 ?        00:00:00 dhclient
+system_u:system_r:syslogd_t:s0      980 ?        00:04:37 rsyslogd
+system_u:system_r:sshd_t:s0-s0:c0.c1023 991 ?    00:00:00 sshd
+system_u:system_r:zonvakt_t:s0     1002 ?        00:00:00 zonvakt
+system_u:system_r:crond_t:s0-s0:c0.c1023 1010 ?  00:00:00 crond
+system_u:system_r:getty_t:s0-s0:c0.c1023 1011 tty1 00:00:00 agetty
+system_u:system_r:getty_t:s0-s0:c0.c1023 1014 ttyS0 00:00:00 agetty
+system_u:system_r:kernel_t:s0      5674 ?        00:00:01 kworker/u8:2-writeback
+system_u:system_r:kernel_t:s0      6003 ?        00:00:00 kworker/1:2-inet_frag_wq
+system_u:system_r:kernel_t:s0      6014 ?        00:00:00 kworker/1:0-events
+system_u:system_r:kernel_t:s0      6050 ?        00:00:00 kworker/0:1-cgroup_bpf_destroy
+system_u:system_r:kernel_t:s0      6064 ?        00:00:00 kworker/0:2-events
+system_u:system_r:kernel_t:s0      6065 ?        00:00:00 kworker/0:0-cgroup_destroy
+system_u:system_r:sshd_t:s0-s0:c0.c1023 6066 ?   00:00:00 sshd-session
+unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 6070 ? 00:00:00 systemd
+system_u:system_r:kernel_t:s0      6071 ?        00:00:00 kworker/0:3-events
+system_u:system_r:init_t:s0        6073 ?        00:00:00 (sd-pam)
+unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 6081 ? 00:00:00 sshd-session
+unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 6082 pts/0 00:00:00 bash
+system_u:system_r:kernel_t:s0      6113 ?        00:00:00 kworker/1:1-cgroup_destroy
+system_u:system_r:kernel_t:s0      6114 ?        00:00:00 kworker/1:3-events
+unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023 6123 pts/0 00:00:00 ps
+
+===== semodule.txt =====
+abrt
+accountsd
+acct
+afs
+afterburn
+aiccu
+aide
+ajaxterm
+alsa
+amanda
+amtu
+anaconda
+antivirus
+apache
+apcupsd
+apm
+application
+arpwatch
+asterisk
+auditadm
+authconfig
+authlogin
+automount
+avahi
+awstats
+bacula
+base
+bcfg2
+bind
+bitlbee
+blkmapd
+blueman
+bluetooth
+boinc
+boltd
+boothd
+bootloader
+bootupd
+brctl
+brltty
+bugzilla
+bumblebee
+cachefilesd
+calamaris
+callweaver
+canna
+ccs
+cdrecord
+certmaster
+certmonger
+certwatch
+cfengine
+cgroup
+chrome
+chronyd
+cinder
+cipe
+clock
+clogd
+cloudform
+cmirrord
+cobbler
+collectd
+colord
+comsat
+condor
+conman
+conntrackd
+consolekit
+coreos_installer
+couchdb
+courier
+cpucontrol
+cpufreqselector
+cpuplug
+cron
+ctdb
+cups
+cvs
+cyphesis
+cyrus
+daemontools
+dbadm
+dbskk
+dbus
+dcc
+ddclient
+denyhosts
+devicekit
+dhcp
+dictd
+dirsrv
+dirsrv-admin
+dmesg
+dmidecode
+dnsmasq
+dnssec
+dovecot
+drbd
+dspam
+entropyd
+exim
+fail2ban
+fcoe
+fdo
+fetchmail
+finger
+firewalld
+firewallgui
+firstboot
+fprintd
+freeipmi
+freqset
+fstools
+ftp
+fwupd
+games
+gdomap
+geoclue
+getty
+git
+gitosis
+glance
+gnome
+gpg
+gpm
+gpsd
+gssproxy
+guest
+hddtemp
+hostapd
+hostname
+hsqldb
+hwloc
+hypervkvp
+ibacm
+ica
+icecast
+iiosensorproxy
+inetd
+init
+inn
+insights_client
+iodine
+iotop
+ipmievd
+ipsec
+iptables
+irc
+irqbalance
+iscsi
+isns
+jabber
+jetty
+jockey
+journalctl
+kdump
+kdumpgui
+keepalived
+kerberos
+keyboardd
+keystone
+kismet
+kmscon
+kpatch
+ksmtuned
+ktalk
+l2tp
+ldap
+libraries
+likewise
+linuxptp
+lircd
+livecd
+lldpad
+loadkeys
+locallogin
+lockdev
+logadm
+logging
+logrotate
+logwatch
+lpd
+lsm
+lttng-tools
+lvm
+mailman
+mailscanner
+man2html
+mandb
+mcelog
+mediawiki
+memcached
+milter
+minidlna
+minissdpd
+mip6d
+mirrormanager
+miscfiles
+mock
+modemmanager
+modutils
+mojomojo
+mon_statd
+mongodb
+motion
+mount
+mozilla
+mpd
+mplayer
+mptcpd
+mrtg
+mta
+munin
+mysql
+mythtv
+naemon
+nagios
+namespace
+ncftool
+netlabel
+netutils
+networkmanager
+ninfod
+nis
+nova
+nscd
+nsd
+nslcd
+ntop
+ntp
+numad
+nut
+nvme_stas
+nx
+obex
+oddjob
+opafm
+openct
+opendnssec
+openfortivpn
+openhpid
+openshift
+openshift-origin
+opensm
+openvpn
+openvswitch
+openwsman
+oracleasm
+osad
+pads
+passenger
+pcmcia
+pcp
+pcscd
+pdns
+pegasus
+permissivedomains
+pesign
+pingd
+piranha
+pkcs
+pkcs11proxyd
+pki
+plymouthd
+podsleuth
+policykit
+polipo
+portmap
+portreserve
+postfix
+postgresql
+postgrey
+powerprofiles
+ppp
+prelink
+prelude
+privoxy
+procmail
+prosody
+psad
+ptchown
+publicfile
+pulseaudio
+puppet
+pwauth
+qatlib
+qgs
+qmail
+qpid
+quantum
+quota
+rabbitmq
+radius
+radvd
+raid
+rasdaemon
+rdisc
+readahead
+realmd
+redis
+remotelogin
+rhcd
+rhcs
+rhev
+rhgb
+rhnsd
+rhsmcertd
+ricci
+rkhunter
+rkt
+rlogin
+rngd
+rolekit
+roundup
+rpc
+rpcbind
+rpm
+rrdcached
+rshd
+rshim
+rssh
+rsync
+rtas
+rtkit
+rwho
+samba
+sambagui
+sandboxX
+sanlock
+sap
+sasl
+sbd
+sblim
+screen
+secadm
+sectoolm
+selinuxutil
+sendmail
+sensord
+setrans
+setroubleshoot
+seunshare
+sge
+shorewall
+slocate
+slpd
+smartmon
+smokeping
+smoltclient
+smsd
+snapper
+snmp
+snort
+sosreport
+soundserver
+spamassassin
+speech-dispatcher
+squid
+ssh
+sslh
+sssd
+staff
+stalld
+stapserver
+stratisd
+stunnel
+su
+sudo
+svnserve
+swift
+switcheroo
+sysadm
+sysadm_secadm
+sysnetwork
+sysstat
+systemd
+tangd
+targetd
+tcpd
+tcsd
+telepathy
+telnet
+tftp
+tgtd
+thin
+thumb
+timedatex
+tlp
+tmpreaper
+tomcat
+tor
+tuned
+tvtime
+udev
+ulogd
+uml
+unconfined
+unconfineduser
+unlabelednet
+unprivuser
+updfstab
+usbmodules
+usbmuxd
+userdomain
+userhelper
+usermanage
+usernetctl
+uucp
+uuidd
+varnishd
+vdagent
+vhostmd
+virt
+vlock
+vmtools
+vmware
+vnstatd
+vpn
+w3c
+watchdog
+wdmd
+webadm
+webalizer
+wine
+wireguard
+wireshark
+xen
+xguest
+xserver
+zabbix
+zarafa
+zebra
+zoneminder
+zonvakt
+zosremote
+
+===== sestatus.txt =====
+SELinux status:                 enabled
+SELinuxfs mount:                /sys/fs/selinux
+SELinux root directory:         /etc/selinux
+Loaded policy name:             targeted
+Current mode:                   enforcing
+Mode from config file:          enforcing
+Policy MLS status:              enabled
+Policy deny_unknown status:     allowed
+Memory protection checking:     actual (secure)
+Max kernel policy version:      33
+
+===== verifiering.txt =====
+GÄLLER: SELinux är i tvingande läge nu (getenforce)
+GÄLLER: SELinux är tvingande även efter omstart (/etc/selinux/config)
+GÄLLER: Policymodulen zonvakt är laddad (typen zonvakt_t finns)
+GÄLLER: Domänen zonvakt_t är inte permissiv
+GÄLLER: Processen zonvakt kör i domänen zonvakt_t
+GÄLLER: zonvakt lyssnar på tcp/7529
+GÄLLER: Bestående fcontext-regel: /srv/zonwebb -> httpd_sys_content_t
+GÄLLER: kvitto.txt har kontexten httpd_sys_content_t
+GÄLLER: nftables startas vid omstart
+GÄLLER: nftables är igång just nu
+
