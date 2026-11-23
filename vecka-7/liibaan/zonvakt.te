@@ -1,0 +1,62 @@
+policy_module(zonvakt, 1.0.0)
+
+########################################
+#
+# Declarations
+#
+
+type zonvakt_t;
+type zonvakt_exec_t;
+init_daemon_domain(zonvakt_t, zonvakt_exec_t)
+
+
+type zonvakt_log_t;
+logging_log_file(zonvakt_log_t)
+
+########################################
+#
+# zonvakt local policy
+#
+allow zonvakt_t self:fifo_file rw_fifo_file_perms;
+allow zonvakt_t self:unix_stream_socket create_stream_socket_perms;
+
+manage_dirs_pattern(zonvakt_t, zonvakt_log_t, zonvakt_log_t)
+manage_files_pattern(zonvakt_t, zonvakt_log_t, zonvakt_log_t)
+manage_lnk_files_pattern(zonvakt_t, zonvakt_log_t, zonvakt_log_t)
+logging_log_filetrans(zonvakt_t, zonvakt_log_t, { dir file lnk_file })
+
+domain_use_interactive_fds(zonvakt_t)
+
+files_read_etc_files(zonvakt_t)
+
+miscfiles_read_localization(zonvakt_t)
+
+# Tillåt Zonvakten att minnesmappa Python-binären
+allow zonvakt_t bin_t:file map;
+
+gen_require(`
+    type bin_t;
+')
+
+# Tillåt Zonvakten att köra Python
+allow zonvakt_t bin_t:file execute;
+
+# Tillåt Zonvakten att läsa användarinformation
+auth_read_passwd(zonvakt_t)
+
+# Tillåt Zonvakten att skapa och använda TCP-socket
+allow zonvakt_t self:tcp_socket { create bind listen accept read write getattr setopt };
+
+# Tillåt Zonvakten att binda till port 7503
+gen_require(`
+    type unreserved_port_t;
+')
+
+allow zonvakt_t unreserved_port_t:tcp_socket name_bind;
+
+# Tillåt Zonvakten att binda till IPv4-adress
+gen_require(`
+    type node_t;
+')
+
+allow zonvakt_t node_t:tcp_socket node_bind;

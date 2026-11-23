@@ -1,29 +1,40 @@
-# Rättelselogg – AI-granskning vecka 7
+# Rättelselogg – AI-granskning
 
-## 1. Granskning av SELinux
+## 1. SELinux – permanent regel
 
-AI-granskningen bekräftade att SELinux är i Enforcing-läge enligt kommandot getenforce och konfigurationsfilen.
+AI-granskningen visar att en registrerad SELinux-regel för
+/srv/zonwebb använder typen httpd_sys_content_t.
 
-## 2. Granskning av Zonvakt
+Rättelse:
+En registrerad regel bevisar inte automatiskt att alla befintliga
+filer har rätt aktiv SELinux-kontext.
 
-AI-granskningen identifierade att Zonvakt körs i domänen zonvakt_t. Domänen är inte särskilt satt i permissive-läge.
+## 2. Brandvägg
 
-## 3. Granskning av permanent SELinux-regel
+Felaktig slutsats:
+Att inkommande policy drop innebär att hela brandväggen är säker.
 
-Regeln för /srv/zonwebb finns registrerad med typen httpd_sys_content_t.
+Rättelse:
+Den inkommande kedjan har policy drop. Detta bevisar inte att
+utgående trafik eller hela brandväggskonfigurationen är säker.
 
-En registrerad regel bevisar inte automatiskt att alla befintliga filer har rätt aktiv kontext.
+## 3. Auditregeln
 
-## 4. Granskning av brandväggen
+Felaktig slutsats:
+Att auditregeln loggar alla root-kommandon.
 
-Den inkommande kedjan har policy drop. Detta bevisar inte att utgående trafik eller hela brandväggskonfigurationen är säker.
-
-## 5. Granskning av auditregeln
-
-Auditregeln omfattar 64-bitars execve-händelser med euid=0, auid>=1000 och auid!=-1.
+Rättelse:
+Regeln omfattar 64-bitars execve-händelser med:
+- euid=0
+- auid>=1000
+- auid!=-1
 
 Den loggar därför inte alla root-kommandon.
 
-## 6. Slutsats
+## 4. Slutsats
 
-AI-granskningen hjälpte till att skilja verifierade resultat från antaganden och överdrivna säkerhetspåståenden. Dokumentationen har avgränsats till de kontroller som faktiskt genomfördes.
+AI-granskningen hjälpte till att identifiera överdrivna
+säkerhetspåståenden och skilja verifierade fakta från antaganden.
+
+Rättelserna begränsar slutsatserna till det som faktiskt
+har kontrollerats.
