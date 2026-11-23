@@ -1,13 +1,16 @@
 # Utdata från `sudo nft list ruleset` på elev-33, inklistrad 2026-11-18.
 # Sista "}" (slut på tabellen) saknades i inklistringen och är tillagd.
+# 2026-11-23: kommentarerna rättade enligt flödestabellen (D5 -> F4, F2 -> D8, zonvakt -> D9),
+# samma ändring gjord på servern. D7 begränsad till 146.75.122.132 (Rockys paketserver),
+# även det gjort på servern. Övriga regler är oförändrade.
 table inet zon {
         chain in {
                 type filter hook input priority filter; policy drop;
                 ct state established,related accept
                 ct state invalid drop
                 iif "lo" accept
-                ip saddr 172.20.1.10 tcp dport 7533 accept comment "zonvakt"
-                ip saddr 172.20.1.10 tcp dport 80 accept comment "F2 Httpd"
+                ip saddr 172.20.1.10 tcp dport 7533 accept comment "D9 zonvakt"
+                ip saddr 172.20.1.10 tcp dport 80 accept comment "D8 Httpd"
                 ip saddr 172.20.1.2 tcp dport 22 accept comment "D1 SSH från jump"
                 ip saddr 172.20.1.10 tcp dport 22 accept comment "D2 Kontroll från ctf"
                 iifname { "eth0", "eth1", "eth2" } udp sport 67 udp dport 68 accept comment "D6 DHCP-svar"
@@ -22,8 +25,8 @@ table inet zon {
                 ip daddr { 185.12.64.1, 185.12.64.2 } meta l4proto { tcp, udp } th dport 53 accept comment "D3 DNS"
                 oifname "eth0" udp dport 123 accept comment "D4 NTP chrony"
                 oifname { "eth0", "eth1", "eth2" } udp sport 68 udp dport 67 accept comment "D6 DHCP-klient"
-                oifname "eth0" tcp dport 443 accept comment "D7 paketuppdateringar dnf"
-                ip daddr 172.20.1.58 tcp dport 6514 accept comment "D5 Logg till loggserver TLS"
+                oifname "eth0" ip daddr 146.75.122.132 tcp dport 443 accept comment "D7 paketuppdateringar dnf"
+                ip daddr 172.20.1.58 tcp dport 6514 accept comment "F4 Logg till loggserver TLS"
                 limit rate 10/minute burst 5 packets log prefix "ZON-UT-DROP " level info
         }
 }
