@@ -29,12 +29,12 @@ Av 33 påståenden stämmer 21 enligt utdata från servern idag, 4 enligt histor
 | P4 | Startkonfigurationen är syntaktiskt korrekt | Stämmer | B4: `SYNTAX-OK` |
 | P5 | Reglerna överlever omstart | Stämmer | B10: omstart rad 912 och 962, kontroll 967–970. B1 visar reglerna som lades till före omstarten (7533, 80) |
 | P6 | In: SSH bara från jump 172.20.1.2 (D1) och ctf 172.20.1.10 (D2) | Stämmer | B1: `ip saddr 172.20.1.2 tcp dport 22 accept`, `ip saddr 172.20.1.10 tcp dport 22 accept`. Ingen annan regel för port 22 i `in` |
-| P7 | In: zonvakt tcp/7533 och httpd tcp/80 bara från ctf 172.20.1.10 | Stämmer | B1: `ip saddr 172.20.1.10 tcp dport 7533 accept comment "zonvakt"`, `ip saddr 172.20.1.10 tcp dport 80 accept comment "F2 Httpd"`. Anmärkning: kommentaren "F2" stämmer inte med flödestabellen, se K3 |
+| P7 | In: zonvakt tcp/7533 och httpd tcp/80 bara från ctf 172.20.1.10 | Stämmer | B1: `ip saddr 172.20.1.10 tcp dport 7533 accept comment "zonvakt"`, `ip saddr 172.20.1.10 tcp dport 80 accept comment "F2 Httpd"`. Anmärkning: kommentaren "F2" stämmer inte med flödestabellen, se K3. Rättat 2026-11-23: kommentarerna är nu `"D9 zonvakt"` och `"D8 Httpd"` |
 | P8 | In: DHCP-svar udp 67→68 (D6) | Stämmer | B1: `udp sport 67 udp dport 68 accept comment "D6 DHCP-svar"` |
 | P9 | Ut: SSH bara till Web/App/Data/Logg-zonerna. Admin-zonen och internet blockeras (F6) | Stämmer | B1: `ip daddr { 10.40.2.0-10.40.2.95 } tcp dport 22 accept`. Admin-zonen 10.40.2.96/28 ligger utanför intervallet |
 | P10 | Ut: DNS bara till 185.12.64.1 och .2. Främmande DNS blockeras (D3) | Stämmer | B1: `ip daddr { 185.12.64.1, 185.12.64.2 } ... th dport 53 accept`. Ingen annan regel för port 53 |
 | P11 | Ut: NTP bara till tillåten tidsserver (D4) | Delvis | B1: `oifname "eth0" udp dport 123 accept`. Gäller alla adresser via eth0, se K4 |
-| P12 | Ut: HTTPS bara för paketuppdateringar (D7). HTTP blockeras | Delvis | B1: `oifname "eth0" tcp dport 443 accept`. Gäller alla adresser via eth0, se K4. Ingen regel för port 80 ut, så HTTP blockeras |
+| P12 | Ut: HTTPS bara för paketuppdateringar (D7). HTTP blockeras | Delvis | B1: `oifname "eth0" tcp dport 443 accept`. Gäller alla adresser via eth0, se K4. Ingen regel för port 80 ut, så HTTP blockeras. Rättat 2026-11-23: D7 gäller bara 146.75.122.132 (Rockys paketserver) |
 | P13 | Ut: syslog över TLS tcp/6514 bara till loggservern. Ingen okrypterad 514 | Stämmer | B1: `ip daddr 172.20.1.58 tcp dport 6514 accept`. Ingen regel för 514 |
 | P14 | Den tillfälliga regeln för tcp/80 till loggservern (för att hämta CA:n) är borta | Stämmer | B11: inlagd rad 348–349. B1: ingen regel med `dport 80` i `ut` |
 | P15 | Avvisad trafik loggas med begränsning och prefix | Stämmer | B1: `limit rate 10/minute burst 5 packets log prefix "ZON-IN-DROP "` och `"ZON-UT-DROP "` |
@@ -93,7 +93,7 @@ Av 33 påståenden stämmer 21 enligt utdata från servern idag, 4 enligt histor
 |---|---|---|---|
 | K1 | SSH tillåter lösenordsinloggning (P29) | `PasswordAuthentication no` och `PermitRootLogin no` i en fil under `/etc/ssh/sshd_config.d/`. Kontrollera först nyckelinloggning via jump och att CTF-kontrollen (D2) inte använder lösenord. Kör `sshd -t` och håll en session öppen medan du testar | elev-33 |
 | K2 | Kontroll 5 i `verifiera-hardning` är för bred (P30) | Sök efter `172.20.1.10 tcp dport 7533` i stället för bara adressen | elev-33 |
-| K3 | Regeln för tcp/80 har kommentaren `"F2 Httpd"` och står som "provisorisk" i `zon.nft`. F2 i flödestabellen är webb → app på 8080 | Byt kommentar och bestäm om regeln ska vara kvar. Uppdatera flödestabellen | elev-33 |
-| K4 | NTP och HTTPS ut är tillåtna mot alla adresser via eth0 (P11, P12) | Begränsa till kända NTP-servrar och paketförråd, eller skriv in undantaget i flödestabellen | elev-33 |
+| K3 | Regeln för tcp/80 hade kommentaren `"F2 Httpd"` och stod som "provisorisk" i `zon.nft`. F2 i flödestabellen är webb → app på tcp 80. 8080 var bara en tillfällig testkörning med `nc -lk 8080` | **Åtgärdat 2026-11-23:** regeln är kvar och heter `"D8 Httpd"` enligt flödestabellen (D8: webbkvitto från ctf, tcp 80). Zonvaktsregeln heter `"D9 zonvakt"` och loggregeln `"F4 Logg till loggserver TLS"` (tidigare D5). Rättat på servern och i repot | elev-33 |
+| K4 | NTP och HTTPS ut är tillåtna mot alla adresser via eth0 (P11, P12) | **HTTPS åtgärdat 2026-11-23:** D7 gäller bara 146.75.122.132 (Rockys paketserver), enligt flödestabellen. Kvar: begränsa NTP till kända servrar, eller skriv in undantaget i flödestabellen | elev-33 |
 | K5 | Loggkedjan är inte testad efter omstart (P27) | Kör kommandona under P27 efter nästa omstart | elev-33 |
 | K6 | Molnbrandväggen är inte dokumenterad (P31) | `moln status` i ssh jump | elev-33 |

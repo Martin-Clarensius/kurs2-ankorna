@@ -6,6 +6,7 @@ define GW                = 10.40.2.1
 define JUMP              = 172.20.1.2
 define CTF               = 172.20.1.10
 define LoggServ_IP       = 172.20.1.58
+define Rocky             = 146.75.122.132
 define MIN_IP            = 10.40.2.99
 
 define WebServ           = 10.40.2.0/27
@@ -23,9 +24,9 @@ table inet zon {
         ct state invalid drop
         iif "lo" accept
 
-        # F2: Provisoriskt flödesregel för httpd
-        ip saddr $CTF tcp dport 7533 accept comment "zonvakt"
-        ip saddr $CTF tcp dport 80 accept comment "F2 Httpd"
+        # D9/D8: zonvakt och webbkvitto från CTF
+        ip saddr $CTF tcp dport 7533 accept comment "D9 zonvakt"
+        ip saddr $CTF tcp dport 80 accept comment "D8 Httpd"
 
         # D1/D2: SSH från jump/CTF till management
         ip saddr $JUMP tcp dport 22 accept comment "D1 SSH från jump"
@@ -55,11 +56,11 @@ table inet zon {
         # D6: DHCP-klient, broadcast och unicast
         oifname { "eth0", "eth1", "eth2" } udp sport 68 udp dport 67 accept comment "D6 DHCP-klient"
 
-        # D7: HTTPS för paketuppdateringar
-        oifname "eth0" tcp dport 443 accept comment "D7 paketuppdateringar dnf"
+        # D7: HTTPS för paketuppdateringar, bara Rockys paketserver
+        oifname "eth0" ip daddr $Rocky tcp dport 443 accept comment "D7 paketuppdateringar dnf"
 
-        # D5: loggning över TLS
-        ip daddr $LoggServ_IP tcp dport 6514 accept comment "D5 Logg till loggserver TLS"
+        # F4: loggning över TLS
+        ip daddr $LoggServ_IP tcp dport 6514 accept comment "F4 Logg till loggserver TLS"
 
         limit rate 10/minute log prefix "ZON-UT-DROP " level info
     }

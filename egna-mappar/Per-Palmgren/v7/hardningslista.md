@@ -78,9 +78,9 @@ Regelfil: [zon.nft](../brandvägg/cfg/zon.nft), kopia av `/etc/nftables/zon.nft`
 
 ## ATT KONTROLLERA / STRYKA
 
-- **Kommentaren `"F2 Httpd"`** på regeln för tcp/80 stämmer inte med flödestabellen. Där är F2 webb → app på 8080. I filen står regeln dessutom som "provisorisk". Byt till t.ex. `"zonwebb httpd från ctf"` och bestäm om den ska vara kvar.
+- ~~**Kommentaren `"F2 Httpd"`** på regeln för tcp/80 stämmer inte med flödestabellen.~~ **Åtgärdat 2026-11-23:** regeln är kvar och heter `"D8 Httpd"` (D8 i flödestabellen). F2 är webb → app på tcp 80. 8080 var bara en tillfällig testkörning med `nc -lk 8080`.
 - **Kontroll 5 är för bred.** `nft list ruleset | grep -q '172.20.1.10'` lyckas redan på D2-regeln (SSH från ctf), även om reglerna för 7533 och 80 saknas. Sök hellre efter `172.20.1.10 tcp dport 7533`.
-- **NTP och HTTPS ut** är öppna mot alla adresser på eth0, inte bara mot NTP-servern eller paketförråden. Mindre strikt än DNS-regeln.
+- **NTP och HTTPS ut** är öppna mot alla adresser på eth0, inte bara mot NTP-servern eller paketförråden. Mindre strikt än DNS-regeln. **HTTPS åtgärdat 2026-11-23:** D7 gäller bara 146.75.122.132. NTP kvarstår.
 - **Omstartstest för loggning**: SELinux och brandväggen är testade efter omstart (962–970), och rsyslog och auditd startar vid uppstart (`enabled`). Det som inte är visat efter omstart är att TLS-anslutningen till loggservern kommer upp och att regeln `root_cmd` laddas. Kontrollera efter nästa omstart med `sudo auditctl -l | grep root_cmd` och `ss -tn dst 172.20.1.58:6514`.
 - **SSH är inte härdat** (`sshd -T`, 2026-11-18): `permitrootlogin without-password` betyder att root kan logga in med nyckel men inte med lösenord. `passwordauthentication yes` betyder att vanliga konton kan logga in med lösenord. Det som skyddar idag är bara att nftables släpper in SSH från jump och ctf. Förslag: `PasswordAuthentication no` och `PermitRootLogin no` i en fil under `/etc/ssh/sshd_config.d/`. Kontrollera först att nyckelinloggning via jump fungerar och att CTF-kontrollen (D2) inte kräver lösenord. Kör `sshd -t` och håll en session öppen medan du testar, så att du inte låser ute dig. Gör du det inte: skriv varför under en egen rubrik om undantag.
 - **Molnbrandväggen** `itsx26-elev-33` (lager 2): regler saknas i [v6](../v6/detektioner-och-playbooks.md#regelverket-på-elev-33-båda-lagren).
