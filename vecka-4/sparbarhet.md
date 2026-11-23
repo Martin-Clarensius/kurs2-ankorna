@@ -5,7 +5,7 @@
 | Regel | Trafik | Status | Bevis |
 |---|---|---|---|
 | F1 | Internet → Webb/DMZ TCP 443 | Konfigurerad | Regel finns i nftables. HTTPS-test är dokumenterat. |
-| F2 | Webb/DMZ → Application TCP 80 | Delvis verifierad | Källa 10.40.2.3, mål 10.40.2.34. SYN observerades men ingen SYN-ACK. Timeout. |
+| F2 | Webb/DMZ → Application TCP 80 | Konfigurerad – ej fullständigt verifierad | Källa 10.40.2.3, planerad målserver 10.40.2.34. Anslutningstest gav timeout. Gruppen har bekräftat att applikationssubnätet för närvarande är tomt och att ingen server används där. Därför kunde kommunikationen inte verifieras fullt ut. |
 | F3 | Application → Databas TCP 5432 | Väntar | Teamverifiering saknas. |
 | F4 | Godkända servrar → Loggserver TCP 6514 TLS | Konfigurerad | Regel finns i nftables till 172.20.1.58. |
 | F5 | Jump → Management TCP 22 | Väntar | Teamverifiering. |
@@ -32,7 +32,7 @@
 ## Viktiga begränsningar
 
 - Konfigurerad betyder inte att trafiktest är godkänt.
-- F2 har inte fullständigt verifierad anslutning till Application.
+- F2 har inte fullständigt verifierad anslutning till Application eftersom applikationssubnätet är tomt.
 - F3–F8 kräver fortsatt verifiering tillsammans med teamet.
 - F9 och F10 har testats mot 10.40.2.65, som är en obekräftad testadress.
 - F4 använder TCP 6514 med TLS till loggservern 172.20.1.58.
