@@ -41,3 +41,29 @@ säkerhetspåståenden och skilja verifierade fakta från antaganden.
 Rättelserna begränsar slutsatserna till det som faktiskt
 har kontrollerats.
 
+## 5. Egen upptäckt av AI-fel – U7.4 (2026-11-17)
+
+**AI:s felaktiga förslag:**
+
+AI föreslog audit-ID 3921 och flaggan `brunn-gavel-turbin-jaguar`. När jag testade förslaget fick jag svaret `Fel flagga för U7.4`.
+
+**Min egen kontroll:**
+
+Jag undersökte audit-ID 2687 med `ausearch` på elev-03.
+
+**Resultat från servern:**
+
+- Proctitle: `--zon park --lage balkong`
+- AVC: `name=klot-gata`
+- `tcontext=tmp_t`
+- `permissive=0`
+
+**Min rättelse:**
+
+Efter fortsatt kontroll skickade jag in flaggan `turbin-jaguar-brunn-gavel`. Servern bekräftade:
+
+`Rätt! U7.4 är registrerad för elev-03.`
+
+**Lärdom:**
+
+AI:s förslag var felaktigt. Jag kontrollerade auditloggen själv, jämförde resultatet och rättade förslaget innan jag fick rätt flagga.
