@@ -45,3 +45,18 @@ Auditregeln omfattar execve-händelser där effektiv UID är 0 och audit UID är
 De sju kontrollerna i verifieringsskriptet godkändes. Resultatet visar att de kontrollerade härdningsinställningarna är aktiva på elev-03.
 
 Kontrollerna utgör inte en fullständig säkerhetsrevision av hela servern.
+
+### Granskning och borttagning av odokumenterad regel för TCP-port 48132
+
+Vid granskning av brandväggsreglerna hittades en regel för inkommande TCP-trafik från `172.20.1.203` till port `48132` på `eth1`. Regeln loggade matchande trafik med prefixet `ZON-IN-DROP`.
+
+Regeln saknades i flödestabellen D1–D7 och det fanns ingen dokumenterad förklaring till dess syfte. Vid kontroll hittades ingen tjänst som lyssnade på port 48132. Ingen matchande loggpost hittades i den kontrollerade kerneljournalen vid undersökningstillfället.
+
+Eftersom regeln saknade dokumenterat behov och inte kunde kopplas till ett definierat trafikflöde togs den bort från den aktiva konfigurationen.
+
+Före ändringen skapades en säkerhetskopia:
+`/etc/nftables/u41.nft.before-48132`
+
+Syntaxen kontrollerades med `sudo nft -c -f /etc/nftables/u41.nft`. Därefter laddades konfigurationen med `sudo nft -f /etc/nftables/u41.nft`. En kontroll med `sudo nft list chain inet zon in` bekräftade att regeln inte längre fanns i den aktiva brandväggen.
+
+Den generella loggningen av blockerad inkommande trafik behölls.
