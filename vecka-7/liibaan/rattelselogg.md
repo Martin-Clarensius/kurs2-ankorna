@@ -1,3 +1,5 @@
+> **Dokumentationsdatum:** 2026-11-23 (senaste verifierade Git-uppdatering). Datumet anger dokumentversionen, inte säkert datum för själva AI-granskningen.
+
 # Rättelselogg – AI-granskning
 
 ## 1. SELinux – permanent regel
@@ -38,3 +40,4 @@ säkerhetspåståenden och skilja verifierade fakta från antaganden.
 
 Rättelserna begränsar slutsatserna till det som faktiskt
 har kontrollerats.
+

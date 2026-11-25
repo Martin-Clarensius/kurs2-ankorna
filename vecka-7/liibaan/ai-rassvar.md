@@ -1,3 +1,5 @@
+> **Dokumentationsdatum:** 2026-11-23 (senaste verifierade Git-uppdatering). Datumet anger dokumentversionen, inte säkert datum för själva AI-granskningen.
+
 # AI-granskning av härdningskontroller – elev-03
 
 ## 1. SELinux – Enforcing
